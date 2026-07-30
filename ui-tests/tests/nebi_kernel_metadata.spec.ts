@@ -86,7 +86,7 @@ const kernelspecs = {
   }
 };
 
-async function mockNebiEndpoints(page: Page): Promise<void> {
+async function mockKernelSpecs(page: Page): Promise<void> {
   await page.route('**/api/kernelspecs*', async route => {
     await route.fulfill({
       status: 200,
@@ -94,17 +94,6 @@ async function mockNebiEndpoints(page: Page): Promise<void> {
       body: JSON.stringify(kernelspecs)
     });
   });
-
-  await page.route(
-    '**/jupyterlab-launchpad/nebi/capabilities*',
-    async route => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ nebi: true, pixi: true })
-      });
-    }
-  );
 }
 
 test.describe('Nebi kernel metadata', () => {
@@ -140,11 +129,8 @@ test.describe('Nebi kernel metadata', () => {
     }
   });
 
-  test('should render Nebi metadata columns and actions', async ({
-    page,
-    tmpPath
-  }) => {
-    await mockNebiEndpoints(page);
+  test('should render Nebi metadata columns', async ({ page, tmpPath }) => {
+    await mockKernelSpecs(page);
     await page.goto(`tree/${tmpPath}?reset`);
 
     const launcher = page.locator('.jp-LauncherBody');
@@ -160,14 +146,8 @@ test.describe('Nebi kernel metadata', () => {
     await expect(
       notebookSection.getByText('Remote', { exact: true })
     ).toBeVisible();
-    await expect(
-      notebookSection
-        .locator('.jp-KernelActionButton')
-        .filter({ hasText: 'Pull' })
-    ).toBeVisible();
-
-    expect(await launcher.screenshot()).toMatchSnapshot(
-      'nebi-kernel-metadata.png'
+    await expect(notebookSection.locator('.jp-KernelActionButton')).toHaveCount(
+      0
     );
   });
 });

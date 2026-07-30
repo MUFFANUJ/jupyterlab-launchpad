@@ -1,4 +1,8 @@
 jest.mock('@jupyterlab/ui-components', () => {
+  class MockLabIcon {
+    react = () => null;
+    constructor(public options: { name: string; svgstr: string }) {}
+  }
   const icon = {
     react: () => null
   };
@@ -6,40 +10,34 @@ jest.mock('@jupyterlab/ui-components', () => {
     checkIcon: icon,
     downloadIcon: icon,
     errorIcon: icon,
+    LabIcon: MockLabIcon,
     refreshIcon: icon
   };
 });
 
-jest.mock('@jupyterlab/apputils', () => ({
-  Notification: {
-    promise: jest.fn()
-  },
-  showErrorMessage: jest.fn(() => Promise.resolve())
+jest.mock('@jupyterlab/launcher', () => ({
+  ILauncher: {}
 }));
 
 jest.mock('../handler', () => ({
-  refreshKernelsWithInvalidation: jest.fn(() => Promise.resolve()),
-  requestAPI: jest.fn(() => Promise.resolve({ nebi: true, pixi: true }))
+  requestAPI: jest.fn(() =>
+    Promise.resolve({
+      uiUrl: 'https://nebi.example.com'
+    })
+  )
 }));
 
 import * as React from 'react';
-import { Notification } from '@jupyterlab/apputils';
 import { LaunchpadKernelTable } from '../kernel-table';
 import { NebiCommandIDs, nebiKernelTablePlugin } from '../components/nebi';
+import { nebiIcon } from '../icons';
 import { requestAPI } from '../handler';
 import { IKernelItem } from '../types';
 
 function activateNebiPlugin(registry: LaunchpadKernelTable) {
   const app = {
     commands: {
-      addCommand: jest.fn(),
-      execute: jest.fn(),
-      notifyCommandChanged: jest.fn()
-    },
-    serviceManager: {
-      kernelspecs: {
-        refreshSpecs: jest.fn()
-      }
+      addCommand: jest.fn()
     }
   };
   const translator = {
@@ -47,9 +45,17 @@ function activateNebiPlugin(registry: LaunchpadKernelTable) {
       __: (message: string) => message
     })
   };
+  const launcher = {
+    add: jest.fn()
+  };
 
-  nebiKernelTablePlugin.activate(app as never, translator as never, registry);
-  return app;
+  nebiKernelTablePlugin.activate(
+    app as never,
+    translator as never,
+    launcher as never,
+    registry
+  );
+  return { app, launcher };
 }
 
 describe('LaunchpadKernelTable', () => {
@@ -102,7 +108,9 @@ describe('LaunchpadKernelTable', () => {
         },
         trans: null as never
       })
-    ).toBe('Missing: ipykernel');
+    ).toBe(
+      'Missing dependencies: ipykernel. Use the Nebi UI or Nebi CLI to add them to this workspace, then refresh kernels.'
+    );
     const renderedRemoteVersion = remoteVersion?.render?.({
       item,
       metadataKey: 'nebi_remote_version',
@@ -142,55 +150,54 @@ describe('LaunchpadKernelTable', () => {
     expect(location?.label).toBe('Location');
   });
 
-  it('registers Nebi commands from the Nebi plugin', () => {
-    const registry = new LaunchpadKernelTable();
-
-    const app = activateNebiPlugin(registry);
-
-    expect(app.commands.addCommand).toHaveBeenCalledWith(
-      NebiCommandIDs.pull,
-      expect.any(Object)
-    );
-    expect(app.commands.addCommand).toHaveBeenCalledWith(
-      NebiCommandIDs.installDependencies,
-      expect.any(Object)
-    );
-    expect(app.commands.addCommand).toHaveBeenCalledWith(
-      NebiCommandIDs.editConfig,
-      expect.any(Object)
-    );
-  });
-
-  it('shows progress notifications for Nebi install actions', async () => {
+  it('registers a single launcher button for Nebi UI', async () => {
     jest.clearAllMocks();
     const registry = new LaunchpadKernelTable();
+    const { app, launcher } = activateNebiPlugin(registry);
 
-    const app = activateNebiPlugin(registry);
     await Promise.resolve();
-    const installCommand = (
-      app.commands.addCommand as jest.Mock
-    ).mock.calls.find(([id]) => id === NebiCommandIDs.installDependencies)?.[1];
-    if (!installCommand) {
-      throw new Error('Install dependencies command was not registered');
-    }
 
-    await installCommand.execute({
-      workspacePath: '/tmp/demo',
-      missingDependencies: ['ipykernel']
-    });
-
-    expect(requestAPI).toHaveBeenCalledWith(
-      'nebi/install-dependencies',
-      expect.objectContaining({ method: 'POST' })
-    );
-    expect(Notification.promise).toHaveBeenCalledWith(
-      expect.any(Promise),
+    expect(app.commands.addCommand).toHaveBeenCalledWith(
+      NebiCommandIDs.openUi,
       expect.objectContaining({
-        pending: expect.objectContaining({
-          message: 'Installing dependencies...'
-        })
+        label: 'Nebi UI',
+        caption: 'Open Nebi UI',
+        icon: nebiIcon
       })
     );
+    expect(launcher.add).toHaveBeenCalledWith(
+      expect.objectContaining({
+        command: NebiCommandIDs.openUi,
+        category: 'Other'
+      })
+    );
+
+    const openCommand = (app.commands.addCommand as jest.Mock).mock.calls[0][1];
+    const originalOpen = window.open;
+    window.open = jest.fn();
+    try {
+      openCommand.execute();
+      expect(window.open).toHaveBeenCalledWith(
+        'https://nebi.example.com',
+        '_blank',
+        'noopener,noreferrer'
+      );
+    } finally {
+      window.open = originalOpen;
+    }
+  });
+
+  it('does not add Nebi UI button without a URL', async () => {
+    jest.clearAllMocks();
+    (requestAPI as jest.Mock).mockResolvedValueOnce({
+      uiUrl: ''
+    });
+    const registry = new LaunchpadKernelTable();
+    const { launcher } = activateNebiPlugin(registry);
+
+    await Promise.resolve();
+
+    expect(launcher.add).not.toHaveBeenCalled();
   });
 
   it('keeps Nebi fallback icon titles behind the Nebi plugin', () => {
@@ -211,7 +218,7 @@ describe('LaunchpadKernelTable', () => {
     expect(registry.getIconFallbackTitle(options)).toBe('Logo is missing');
   });
 
-  it('registers context-dependent Nebi actions', () => {
+  it('does not register direct Nebi actions', () => {
     const registry = new LaunchpadKernelTable();
     const item = {} as IKernelItem;
 
@@ -225,21 +232,7 @@ describe('LaunchpadKernelTable', () => {
       },
       trans: null as never
     });
-    expect(remoteActions.map(action => action.command)).toEqual([
-      NebiCommandIDs.pull
-    ]);
-    expect(
-      remoteActions[0].args?.({
-        item,
-        metadata: {
-          nebi_state: 'remote-not-pulled',
-          nebi_workspace: 'demo'
-        },
-        trans: null as never
-      })
-    ).toMatchObject({
-      workspace: 'demo'
-    });
+    expect(remoteActions).toEqual([]);
 
     const missingDependencyActions = registry.getActions({
       item,
@@ -251,10 +244,7 @@ describe('LaunchpadKernelTable', () => {
       },
       trans: null as never
     });
-    expect(missingDependencyActions.map(action => action.command)).toEqual([
-      NebiCommandIDs.installDependencies,
-      NebiCommandIDs.editConfig
-    ]);
+    expect(missingDependencyActions).toEqual([]);
 
     const readyActions = registry.getActions({
       item,
@@ -265,8 +255,6 @@ describe('LaunchpadKernelTable', () => {
       },
       trans: null as never
     });
-    expect(readyActions.map(action => action.command)).toEqual([
-      NebiCommandIDs.editConfig
-    ]);
+    expect(readyActions).toEqual([]);
   });
 });

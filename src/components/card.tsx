@@ -14,6 +14,7 @@ export function TypeCard(props: {
     <div
       onClick={() => item.execute()}
       className="jp-Launcher-TypeCard jp-LauncherCard"
+      data-command={item.command}
       title={item.caption || item.label}
       tabIndex={0}
     >

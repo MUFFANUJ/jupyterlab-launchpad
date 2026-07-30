@@ -4,7 +4,7 @@ import {
   JupyterFrontEnd,
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
-import { Notification, showErrorMessage } from '@jupyterlab/apputils';
+import { ILauncher } from '@jupyterlab/launcher';
 import { ITranslator } from '@jupyterlab/translation';
 import {
   checkIcon,
@@ -13,33 +13,22 @@ import {
   refreshIcon
 } from '@jupyterlab/ui-components';
 import type { LabIcon } from '@jupyterlab/ui-components';
-import type {
-  ReadonlyJSONObject,
-  ReadonlyPartialJSONObject
-} from '@lumino/coreutils';
+import type { ReadonlyJSONObject } from '@lumino/coreutils';
 import * as React from 'react';
-import { refreshKernelsWithInvalidation, requestAPI } from '../handler';
+import { requestAPI } from '../handler';
+import { nebiIcon } from '../icons';
 import {
-  IKernelAction,
-  IKernelActionOptions,
   IKernelIconFallbackTitleProvider,
   IKernelMetadataColumn,
   ILaunchpadKernelTable
 } from '../types';
 
 export namespace NebiCommandIDs {
-  export const pull = 'launchpad:nebi-pull';
-  export const installDependencies = 'launchpad:nebi-install-dependencies';
-  export const editConfig = 'launchpad:nebi-edit-config';
+  export const openUi = 'launchpad:nebi-open-ui';
 }
 
-interface INebiActionCapabilities {
-  nebi: boolean;
-  pixi: boolean;
-}
-
-interface INebiConfigPathResponse {
-  path: string;
+interface INebiCapabilities {
+  uiUrl?: string;
 }
 
 const NEBI_STATUS_LABELS: Record<string, string> = {
@@ -189,19 +178,34 @@ function renderLocation(value: string): React.ReactNode {
 function missingDependenciesTitle(
   metadata: ReadonlyJSONObject | undefined
 ): string | undefined {
-  const value = metadata?.['nebi_missing_dependencies'];
-  if (!Array.isArray(value)) {
-    return undefined;
-  }
-
-  const dependencies = value.filter(
-    item => typeof item === 'string' && item.length > 0
-  );
+  const dependencies = missingDependencies(metadata);
   if (dependencies.length === 0) {
     return undefined;
   }
 
-  return `Missing: ${dependencies.join(', ')}`;
+  return `Missing dependencies: ${dependencies.join(', ')}`;
+}
+
+function missingDependenciesStatusTitle(
+  metadata: ReadonlyJSONObject | undefined
+): string {
+  const title = missingDependenciesTitle(metadata);
+  const action =
+    'Use the Nebi UI or Nebi CLI to add them to this workspace, then refresh kernels.';
+  return title
+    ? `${title}. ${action}`
+    : 'This workspace is missing dependencies. Use the Nebi UI or Nebi CLI to add them to this workspace, then refresh kernels.';
+}
+
+function missingDependencies(
+  metadata: ReadonlyJSONObject | undefined
+): string[] {
+  const value = metadata?.['nebi_missing_dependencies'];
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter(item => typeof item === 'string' && item.length > 0);
 }
 
 function isLatestVersion(
@@ -243,9 +247,8 @@ function nebiStatusTitle(
     return undefined;
   }
 
-  const missingDependencies = missingDependenciesTitle(metadata);
-  if (missingDependencies) {
-    return missingDependencies;
+  if (value === 'missing-deps') {
+    return missingDependenciesStatusTitle(metadata);
   }
 
   const reason = metadata?.['nebi_not_ready_reason'];
@@ -338,56 +341,6 @@ const nebiColumns: IKernelMetadataColumn[] = Object.entries(
   }
 }));
 
-function actionArgs({ metadata }: IKernelActionOptions) {
-  return {
-    workspace: metadata?.['nebi_workspace'],
-    workspacePath: metadata?.['nebi_workspace_path'],
-    remoteVersion: metadata?.['nebi_remote_version'],
-    environment: metadata?.['pixi_environment'],
-    missingDependencies: metadata?.['nebi_missing_dependencies']
-  };
-}
-
-const nebiActions: IKernelAction[] = [
-  {
-    id: 'nebi-pull',
-    label: 'Pull',
-    command: NebiCommandIDs.pull,
-    title: 'Pull this Nebi workspace',
-    rank: 0,
-    isAvailable: options =>
-      statusFromMetadata(options.metadata, options.metadata?.['nebi_state']) ===
-        'not-pulled' &&
-      typeof options.metadata?.['nebi_workspace'] === 'string' &&
-      options.metadata['nebi_workspace'].length > 0,
-    args: actionArgs
-  },
-  {
-    id: 'nebi-install-dependencies',
-    label: 'Install deps',
-    command: NebiCommandIDs.installDependencies,
-    title: 'Install missing dependencies',
-    rank: 1,
-    isAvailable: options =>
-      statusFromMetadata(options.metadata, options.metadata?.['nebi_state']) ===
-        'missing-deps' &&
-      typeof options.metadata?.['nebi_workspace_path'] === 'string' &&
-      options.metadata['nebi_workspace_path'].length > 0,
-    args: actionArgs
-  },
-  {
-    id: 'nebi-edit-config',
-    label: 'Edit config',
-    command: NebiCommandIDs.editConfig,
-    title: 'Edit Nebi workspace configuration',
-    rank: 2,
-    isAvailable: options =>
-      typeof options.metadata?.['nebi_workspace_path'] === 'string' &&
-      options.metadata['nebi_workspace_path'].length > 0,
-    args: actionArgs
-  }
-];
-
 const nebiIconFallbackTitleProvider: IKernelIconFallbackTitleProvider = {
   id: 'nebi-logo-reason',
   title: ({ metadata }) => {
@@ -398,197 +351,62 @@ const nebiIconFallbackTitleProvider: IKernelIconFallbackTitleProvider = {
   }
 };
 
-function stringArg(args: ReadonlyPartialJSONObject, key: string): string {
-  const value = args[key];
-  return typeof value === 'string' ? value : '';
-}
-
-function commandBody(args: ReadonlyPartialJSONObject): RequestInit {
-  return {
-    method: 'POST',
-    body: JSON.stringify(args),
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  };
-}
-
-async function refreshKernelSpecs(app: JupyterFrontEnd): Promise<void> {
-  await refreshKernelsWithInvalidation();
-  await app.serviceManager.kernelspecs.refreshSpecs();
-}
-
-function notifyAction<T>(
-  operation: Promise<T>,
-  messages: { pending: string; success: string; error: string }
-): Promise<T> {
-  Notification.promise(
-    operation.then(() => null),
-    {
-      pending: {
-        message: messages.pending,
-        options: { autoClose: false }
-      },
-      success: {
-        message: () => messages.success,
-        options: { autoClose: 3000 }
-      },
-      error: {
-        message: () => messages.error,
-        options: { autoClose: false }
-      }
-    }
-  );
-  return operation;
-}
-
-function registerNebiActionCommands(
+function registerOpenNebiUiCommand(
   app: JupyterFrontEnd,
+  launcher: ILauncher,
   trans: ReturnType<ITranslator['load']>
 ): void {
-  const { commands } = app;
-  let capabilities: INebiActionCapabilities = {
-    nebi: false,
-    pixi: false
-  };
-  const refreshActionCommands = () => {
-    commands.notifyCommandChanged(NebiCommandIDs.pull);
-    commands.notifyCommandChanged(NebiCommandIDs.installDependencies);
-  };
+  let uiUrl = '';
 
-  void requestAPI<INebiActionCapabilities>('nebi/capabilities')
-    .then(value => {
-      capabilities = value;
-      refreshActionCommands();
+  app.commands.addCommand(NebiCommandIDs.openUi, {
+    label: trans.__('Nebi UI'),
+    caption: trans.__('Open Nebi UI'),
+    icon: nebiIcon,
+    isEnabled: () => uiUrl.length > 0,
+    isVisible: () => uiUrl.length > 0,
+    execute: () => {
+      if (!uiUrl) {
+        return;
+      }
+      window.open(uiUrl, '_blank', 'noopener,noreferrer');
+    }
+  });
+
+  void requestAPI<INebiCapabilities>('nebi/capabilities')
+    .then(capabilities => {
+      if (typeof capabilities.uiUrl !== 'string' || !capabilities.uiUrl) {
+        return;
+      }
+      uiUrl = capabilities.uiUrl;
+      launcher.add({
+        command: NebiCommandIDs.openUi,
+        category: trans.__('Other'),
+        rank: 0
+      });
     })
     .catch(error => {
       console.warn('Could not load Nebi action capabilities', error);
-      refreshActionCommands();
     });
-
-  const canPull = (args: ReadonlyPartialJSONObject) =>
-    capabilities.nebi && stringArg(args, 'workspace').length > 0;
-  const canInstallDependencies = (args: ReadonlyPartialJSONObject) =>
-    capabilities.pixi && stringArg(args, 'workspacePath').length > 0;
-  const canEditConfig = (args: ReadonlyPartialJSONObject) =>
-    stringArg(args, 'workspacePath').length > 0;
-
-  commands.addCommand(NebiCommandIDs.pull, {
-    label: trans.__('Pull'),
-    caption: () =>
-      capabilities.nebi
-        ? trans.__('Pull this Nebi workspace')
-        : trans.__('Nebi CLI is not available on this Jupyter server'),
-    isVisible: canPull,
-    isEnabled: canPull,
-    execute: async args => {
-      if (!capabilities.nebi) {
-        return;
-      }
-      try {
-        await notifyAction(
-          requestAPI('nebi/pull', commandBody(args)).then(() =>
-            refreshKernelSpecs(app)
-          ),
-          {
-            pending: trans.__('Pulling workspace...'),
-            success: trans.__('Workspace Pulled'),
-            error: trans.__('Could not pull workspace')
-          }
-        );
-      } catch (error) {
-        console.error(error);
-        await showErrorMessage(
-          trans.__('Could not pull Nebi workspace'),
-          error as Error
-        );
-      }
-    }
-  });
-
-  commands.addCommand(NebiCommandIDs.installDependencies, {
-    label: trans.__('Install deps'),
-    caption: () =>
-      capabilities.pixi
-        ? trans.__('Install missing dependencies')
-        : trans.__('Pixi is not available on this Jupyter server'),
-    isVisible: canInstallDependencies,
-    isEnabled: canInstallDependencies,
-    execute: async args => {
-      if (!capabilities.pixi) {
-        return;
-      }
-      try {
-        await notifyAction(
-          requestAPI('nebi/install-dependencies', commandBody(args)).then(() =>
-            refreshKernelSpecs(app)
-          ),
-          {
-            pending: trans.__('Installing dependencies...'),
-            success: trans.__('Dependencies installed'),
-            error: trans.__('Could not install dependencies')
-          }
-        );
-      } catch (error) {
-        console.error(error);
-        await showErrorMessage(
-          trans.__('Could not install Nebi dependencies'),
-          error as Error
-        );
-      }
-    }
-  });
-
-  commands.addCommand(NebiCommandIDs.editConfig, {
-    label: trans.__('Edit config'),
-    caption: trans.__('Edit Nebi workspace configuration'),
-    isVisible: canEditConfig,
-    isEnabled: canEditConfig,
-    execute: async args => {
-      const workspacePath = stringArg(args, 'workspacePath');
-      if (!workspacePath) {
-        return;
-      }
-
-      try {
-        const response = await requestAPI<INebiConfigPathResponse>(
-          'nebi/config-path',
-          commandBody(args)
-        );
-        await commands.execute('docmanager:open', {
-          path: response.path
-        });
-      } catch (error) {
-        console.error(error);
-        await showErrorMessage(
-          trans.__('Could not open Nebi config'),
-          error as Error
-        );
-      }
-    }
-  });
 }
 
 export const nebiKernelTablePlugin: JupyterFrontEndPlugin<void> = {
   id: 'jupyterlab-launchpad:nebi',
   description: 'Nebi kernel metadata presentation for launchpad',
   autoStart: true,
-  requires: [ITranslator, ILaunchpadKernelTable],
+  requires: [ITranslator, ILauncher, ILaunchpadKernelTable],
   activate: (
     app,
     translator: ITranslator,
+    launcher: ILauncher,
     kernelTable: ILaunchpadKernelTable
   ) => {
     const trans = translator.load('jupyterlab-launchpad');
-    registerNebiActionCommands(app, trans);
+    registerOpenNebiUiCommand(app, launcher, trans);
     kernelTable.registerIconFallbackTitleProvider(
       nebiIconFallbackTitleProvider
     );
     for (const column of nebiColumns) {
       kernelTable.registerMetadataColumn(column);
-    }
-    for (const action of nebiActions) {
-      kernelTable.registerAction(action);
     }
   }
 };

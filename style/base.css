@@ -44,6 +44,14 @@
   height: 16px;
 }
 
+.jp-NewLauncher-OtherItems
+  .jp-Launcher-TypeCard[data-command='launchpad:nebi-open-ui']
+  > .jp-LauncherCard-icon
+  svg {
+  width: 20px;
+  height: 20px;
+}
+
 .jp-NewLauncher-TopBar {
   display: flex;
   justify-content: space-between;

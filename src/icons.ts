@@ -2,6 +2,7 @@ import { LabIcon } from '@jupyterlab/ui-components';
 import starSvgstr from '../style/icons/md/star.svg';
 import fileSvgstr from '../style/icons/md/file.svg';
 import codeServerSvgstr from '../style/icons/code-server.svg';
+import nebiSvgstr from '../style/icons/nebi.svg';
 
 export const starIcon = new LabIcon({
   name: 'jupyterlab-launchpad:star',
@@ -16,4 +17,9 @@ export const fileIcon = new LabIcon({
 export const codeServerIcon = new LabIcon({
   name: 'jupyterlab-launchpad:code-server',
   svgstr: codeServerSvgstr
+});
+
+export const nebiIcon = new LabIcon({
+  name: 'jupyterlab-launchpad:nebi',
+  svgstr: nebiSvgstr
 });
