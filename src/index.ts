@@ -20,7 +20,7 @@ import { ReadonlyPartialJSONObject } from '@lumino/coreutils';
 import { DockPanel, TabBar, Widget } from '@lumino/widgets';
 import { NewLauncher as Launcher } from './launcher';
 import { NewModel as Model } from './model';
-import { refreshKernelsWithInvalidation } from './handler';
+import { refreshKernelSpecs } from './kernel-refresh';
 import {
   CommandIDs,
   ILauncherDatabase,
@@ -75,11 +75,6 @@ function createStyleSheet(text: string): HTMLStyleElement {
   style.setAttribute('type', 'text/css');
   style.appendChild(document.createTextNode(text));
   return style;
-}
-
-async function refreshKernelSpecs(app: JupyterFrontEnd): Promise<void> {
-  await refreshKernelsWithInvalidation();
-  await app.serviceManager.kernelspecs.refreshSpecs();
 }
 
 /**

@@ -18,7 +18,9 @@ import type {
   ReadonlyPartialJSONObject
 } from '@lumino/coreutils';
 import * as React from 'react';
-import { refreshKernelsWithInvalidation, requestAPI } from '../handler';
+import { requestAPI } from '../handler';
+import { addKernelRefreshMessageListener } from '../kernel-refresh-messages';
+import { refreshKernelSpecs } from '../kernel-refresh';
 import {
   IKernelAction,
   IKernelActionOptions,
@@ -32,6 +34,8 @@ export namespace NebiCommandIDs {
   export const installDependencies = 'launchpad:nebi-install-dependencies';
   export const editConfig = 'launchpad:nebi-edit-config';
 }
+
+export const NEBI_JOB_COMPLETED_MESSAGE = 'nebi:job-completed';
 
 interface INebiActionCapabilities {
   nebi: boolean;
@@ -413,11 +417,6 @@ function commandBody(args: ReadonlyPartialJSONObject): RequestInit {
   };
 }
 
-async function refreshKernelSpecs(app: JupyterFrontEnd): Promise<void> {
-  await refreshKernelsWithInvalidation();
-  await app.serviceManager.kernelspecs.refreshSpecs();
-}
-
 function notifyAction<T>(
   operation: Promise<T>,
   messages: { pending: string; success: string; error: string }
@@ -580,6 +579,8 @@ export const nebiKernelTablePlugin: JupyterFrontEndPlugin<void> = {
     kernelTable: ILaunchpadKernelTable
   ) => {
     const trans = translator.load('jupyterlab-launchpad');
+    // Registered for the lifetime of the Nebi plugin.
+    addKernelRefreshMessageListener(app, [NEBI_JOB_COMPLETED_MESSAGE]);
     registerNebiActionCommands(app, trans);
     kernelTable.registerIconFallbackTitleProvider(
       nebiIconFallbackTitleProvider
