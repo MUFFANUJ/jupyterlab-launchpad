@@ -27,6 +27,12 @@ export class LaunchpadKernelTable implements ILaunchpadKernelTable {
     return this._metadataColumns.get(id);
   }
 
+  // Expose all registered metadata columns so tables can include default
+  // columns even when a particular row does not provide that metadata.
+  getMetadataColumns(): IKernelMetadataColumn[] {
+    return [...this._metadataColumns.values()];
+  }
+
   registerAction(action: IKernelAction): void {
     if (!action.id) {
       throw new Error('Kernel action id is required.');

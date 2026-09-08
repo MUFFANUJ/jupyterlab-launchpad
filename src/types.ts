@@ -22,7 +22,8 @@ export interface ISectionOptions {
   id: string;
   title: string;
   className: string;
-  icon: LabIcon;
+  icon?: LabIcon;
+  description?: string;
   render: () => React.ReactNode;
   rank: number;
 }
@@ -76,6 +77,7 @@ export interface ILaunchpadKernelTable {
   readonly changed: ISignal<ILaunchpadKernelTable, void>;
   registerMetadataColumn(column: IKernelMetadataColumn): void;
   getMetadataColumn(id: string): IKernelMetadataColumn | undefined;
+  getMetadataColumns(): IKernelMetadataColumn[];
   registerAction(action: IKernelAction): void;
   getActions(options: IKernelActionOptions): IKernelAction[];
   registerIconFallbackTitleProvider(
@@ -89,6 +91,12 @@ export interface ILaunchpadKernelTable {
 export interface IKernelMetadataColumn {
   id: string;
   label?: string;
+  /**
+   * Include registered virtual columns even when rows do not expose metadata
+   * with the same id. For example, `nebi_version` renders from local/remote
+   * version metadata.
+   */
+  isVisibleByDefault?: boolean;
   title?(options: IKernelMetadataRenderOptions): string | undefined;
   render?(options: IKernelMetadataRenderOptions): React.ReactNode | undefined;
 }

@@ -6,13 +6,7 @@ import {
 } from '@jupyterlab/application';
 import { Notification, showErrorMessage } from '@jupyterlab/apputils';
 import { ITranslator } from '@jupyterlab/translation';
-import {
-  checkIcon,
-  downloadIcon,
-  errorIcon,
-  refreshIcon
-} from '@jupyterlab/ui-components';
-import type { LabIcon } from '@jupyterlab/ui-components';
+import { infoIcon } from '@jupyterlab/ui-components';
 import type {
   ReadonlyJSONObject,
   ReadonlyPartialJSONObject
@@ -46,28 +40,42 @@ interface INebiConfigPathResponse {
   path: string;
 }
 
-const NEBI_STATUS_LABELS: Record<string, string> = {
-  'not-pulled': 'Not pulled',
-  'not-installed': 'Not installed',
-  'missing-deps': 'Missing deps',
-  outdated: 'Outdated',
-  ready: 'Ready'
-};
+interface INebiStatusPresentation {
+  label: string;
+  className: string;
+  showInfoIcon?: boolean;
+}
 
-const NEBI_STATUS_CLASSES: Record<string, string> = {
-  'not-pulled': 'jp-NebiStatus-not-pulled',
-  'not-installed': 'jp-NebiStatus-not-installed',
-  'missing-deps': 'jp-NebiStatus-missing-deps',
-  outdated: 'jp-NebiStatus-outdated',
-  ready: 'jp-NebiStatus-ready'
-};
-
-const NEBI_STATUS_ICONS: Record<string, LabIcon> = {
-  'not-pulled': downloadIcon,
-  'not-installed': errorIcon,
-  'missing-deps': errorIcon,
-  outdated: refreshIcon,
-  ready: checkIcon
+const NEBI_STATUS_PRESENTATION: Record<string, INebiStatusPresentation> = {
+  'not-pulled': {
+    label: 'Not pulled',
+    className: 'jp-NebiStatus-not-pulled',
+    showInfoIcon: true
+  },
+  'not-installed': {
+    label: 'Not installed',
+    className: 'jp-NebiStatus-not-installed',
+    showInfoIcon: true
+  },
+  'missing-deps': {
+    label: 'Missing dependencies',
+    className: 'jp-NebiStatus-missing-deps',
+    showInfoIcon: true
+  },
+  failed: {
+    label: 'Failed',
+    className: 'jp-NebiStatus-failed',
+    showInfoIcon: true
+  },
+  outdated: {
+    label: 'Outdated',
+    className: 'jp-NebiStatus-outdated',
+    showInfoIcon: true
+  },
+  ready: {
+    label: 'Ready',
+    className: 'jp-NebiStatus-ready'
+  }
 };
 
 const NEBI_LOCATION_LABELS: Record<string, string> = {
@@ -84,6 +92,7 @@ const NEBI_REDUNDANT_REASONS = new Set([
 ]);
 
 const NEBI_METADATA_LABELS: Record<string, string> = {
+  nebi_version: 'Version',
   nebi_state: 'Status',
   nebi_status: 'Status',
   nebi_location: 'Location',
@@ -125,7 +134,9 @@ function statusFromMetadata(
   fallback?: unknown
 ): string | undefined {
   return (
-    normalizeStatus(metadata?.['nebi_status']) ?? normalizeStatus(fallback)
+    normalizeStatus(metadata?.['nebi_status']) ??
+    normalizeStatus(metadata?.['nebi_state']) ??
+    normalizeStatus(fallback)
   );
 }
 
@@ -164,25 +175,34 @@ function locationFromMetadata(
 function renderNebiIndicator(
   label: string,
   className: string,
-  icon: LabIcon
+  status: string,
+  showInfoIcon?: boolean
 ): React.ReactNode {
   return (
-    <span className={`jp-NebiIndicator ${className}`}>
-      <icon.react
-        className="jp-NebiIndicator-icon"
-        tag="span"
-        aria-hidden="true"
-      />
-      <span>{label}</span>
+    <span className={`jp-NebiIndicator ${className}`} data-status={status}>
+      <span className="jp-NebiIndicator-label">{label}</span>
+      {showInfoIcon ? (
+        <infoIcon.react
+          className="jp-NebiIndicator-icon"
+          tag="span"
+          aria-hidden="true"
+        />
+      ) : null}
     </span>
   );
 }
 
 function renderStatus(value: string): React.ReactNode {
-  const label = NEBI_STATUS_LABELS[value] ?? value;
-  const className = NEBI_STATUS_CLASSES[value] ?? 'jp-NebiStatus-unknown';
-  const icon = NEBI_STATUS_ICONS[value] ?? errorIcon;
-  return renderNebiIndicator(label, className, icon);
+  const presentation = NEBI_STATUS_PRESENTATION[value] ?? {
+    label: value,
+    className: 'jp-NebiStatus-unknown'
+  };
+  return renderNebiIndicator(
+    presentation.label,
+    presentation.className,
+    value,
+    presentation.showInfoIcon
+  );
 }
 
 function renderLocation(value: string): React.ReactNode {
@@ -205,14 +225,14 @@ function missingDependenciesTitle(
     return undefined;
   }
 
-  return `Missing: ${dependencies.join(', ')}`;
+  return `This environment is missing ${dependencies.length === 1 ? 'a dependency' : 'dependencies'} required to start. Use Attempt fix to install them.`;
 }
 
 function isLatestVersion(
   id: string,
   value: unknown,
   metadata: ReadonlyJSONObject | undefined
-): boolean {
+): value is string {
   if (typeof value !== 'string' || value.length === 0 || !metadata) {
     return false;
   }
@@ -237,6 +257,51 @@ function isLatestVersion(
   }
 
   return false;
+}
+
+function localVersionFromMetadata(
+  metadata: ReadonlyJSONObject | undefined,
+  fallback?: unknown
+): string | undefined {
+  if (typeof fallback === 'string' && fallback.length > 0) {
+    return fallback;
+  }
+
+  const localVersion = metadata?.['nebi_local_version'];
+  return typeof localVersion === 'string' && localVersion.length > 0
+    ? localVersion
+    : undefined;
+}
+
+function renderNebiVersion(
+  version: string,
+  options: { remoteVersion?: unknown; updateAvailable?: boolean } = {}
+): React.ReactNode {
+  if (!options.updateAvailable) {
+    return (
+      <span className="jp-NebiVersion" aria-label={version}>
+        <span>{version}</span>
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className="jp-NebiVersion"
+      title={
+        typeof options.remoteVersion === 'string'
+          ? `Remote version ${options.remoteVersion} is available`
+          : 'Update available'
+      }
+      aria-label={`${version} update available`}
+    >
+      <span>{version}</span>
+      <span className="jp-NebiVersionSeparator" aria-hidden="true">
+        ·
+      </span>
+      <span className="jp-NebiVersionUpdate">update available</span>
+    </span>
+  );
 }
 
 function nebiStatusTitle(
@@ -265,6 +330,7 @@ const nebiColumns: IKernelMetadataColumn[] = Object.entries(
 ).map(([id, label]) => ({
   id,
   label,
+  isVisibleByDefault: id === 'nebi_version' || id === 'nebi_status',
   title: ({ value, metadata }) => {
     if (id === 'nebi_state' || id === 'nebi_status') {
       return nebiStatusTitle(statusFromMetadata(metadata, value), metadata);
@@ -277,6 +343,23 @@ const nebiColumns: IKernelMetadataColumn[] = Object.entries(
     return undefined;
   },
   render: ({ value, metadata }) => {
+    if (id === 'nebi_version') {
+      const version = localVersionFromMetadata(metadata, value);
+      if (!version) {
+        return '-';
+      }
+
+      const remoteVersion = metadata?.['nebi_remote_version'];
+      if (metadata?.['nebi_outdated'] === true) {
+        return renderNebiVersion(version, {
+          remoteVersion,
+          updateAvailable: true
+        });
+      }
+
+      return renderNebiVersion(version);
+    }
+
     if (id === 'nebi_state' || id === 'nebi_status') {
       const status = statusFromMetadata(metadata, value);
       if (!status) {
@@ -296,20 +379,25 @@ const nebiColumns: IKernelMetadataColumn[] = Object.entries(
     }
 
     if (
+      id === 'nebi_local_version' &&
+      metadata?.['nebi_outdated'] === true &&
+      typeof value === 'string' &&
+      value.length > 0
+    ) {
+      const version = value;
+      const remoteVersion = metadata?.['nebi_remote_version'];
+      return renderNebiVersion(version, {
+        remoteVersion,
+        updateAvailable: true
+      });
+    }
+
+    if (
       (id === 'nebi_local_version' || id === 'nebi_remote_version') &&
       isLatestVersion(id, value, metadata)
     ) {
-      const version = value as string;
-      return (
-        <span
-          className="jp-NebiVersion jp-mod-latest"
-          title="Latest version"
-          aria-label={`${version} latest version`}
-        >
-          <span>{version}</span>
-          <span className="jp-NebiVersionLatest">(Latest)</span>
-        </span>
-      );
+      const version = value;
+      return renderNebiVersion(version);
     }
 
     if (
@@ -317,11 +405,7 @@ const nebiColumns: IKernelMetadataColumn[] = Object.entries(
       typeof value === 'string' &&
       value.length > 0
     ) {
-      return (
-        <span className="jp-NebiVersion">
-          <span>{value}</span>
-        </span>
-      );
+      return renderNebiVersion(value);
     }
 
     if (id === 'nebi_missing_dependencies' && Array.isArray(value)) {
@@ -360,30 +444,40 @@ const nebiActions: IKernelAction[] = [
     title: 'Pull this Nebi workspace',
     rank: 0,
     isAvailable: options =>
-      statusFromMetadata(options.metadata, options.metadata?.['nebi_state']) ===
-        'not-pulled' &&
+      statusFromMetadata(options.metadata) === 'not-pulled' &&
       typeof options.metadata?.['nebi_workspace'] === 'string' &&
       options.metadata['nebi_workspace'].length > 0,
     args: actionArgs
   },
   {
+    id: 'nebi-install-environment',
+    label: 'Install',
+    command: NebiCommandIDs.installDependencies,
+    title: 'Install environment',
+    rank: 1,
+    isAvailable: options =>
+      statusFromMetadata(options.metadata) === 'not-installed' &&
+      typeof options.metadata?.['nebi_workspace_path'] === 'string' &&
+      options.metadata['nebi_workspace_path'].length > 0,
+    args: actionArgs
+  },
+  {
     id: 'nebi-install-dependencies',
-    label: 'Install deps',
+    label: 'Attempt fix',
     command: NebiCommandIDs.installDependencies,
     title: 'Install missing dependencies',
     rank: 1,
     isAvailable: options =>
-      statusFromMetadata(options.metadata, options.metadata?.['nebi_state']) ===
-        'missing-deps' &&
+      statusFromMetadata(options.metadata) === 'missing-deps' &&
       typeof options.metadata?.['nebi_workspace_path'] === 'string' &&
       options.metadata['nebi_workspace_path'].length > 0,
     args: actionArgs
   },
   {
     id: 'nebi-edit-config',
-    label: 'Edit config',
+    label: 'Open in Nebi',
     command: NebiCommandIDs.editConfig,
-    title: 'Edit Nebi workspace configuration',
+    title: 'Open Nebi workspace configuration',
     rank: 2,
     isAvailable: options =>
       typeof options.metadata?.['nebi_workspace_path'] === 'string' &&
@@ -506,7 +600,7 @@ function registerNebiActionCommands(
   });
 
   commands.addCommand(NebiCommandIDs.installDependencies, {
-    label: trans.__('Install deps'),
+    label: trans.__('Attempt fix'),
     caption: () =>
       capabilities.pixi
         ? trans.__('Install missing dependencies')
@@ -539,8 +633,8 @@ function registerNebiActionCommands(
   });
 
   commands.addCommand(NebiCommandIDs.editConfig, {
-    label: trans.__('Edit config'),
-    caption: trans.__('Edit Nebi workspace configuration'),
+    label: trans.__('Open in Nebi'),
+    caption: trans.__('Open Nebi workspace configuration'),
     isVisible: canEditConfig,
     isEnabled: canEditConfig,
     execute: async args => {

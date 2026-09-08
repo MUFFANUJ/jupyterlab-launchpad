@@ -4,7 +4,8 @@
  */
 
 import React, { ReactElement, ReactNode, useState } from 'react';
-import { caretDownIcon, caretUpIcon } from '@jupyterlab/ui-components';
+import { moveDownIcon, moveUpIcon } from '@jupyterlab/ui-components';
+import { arrowUpDownIcon } from '../icons';
 
 export const TABLE_CLASS = 'jp-sortable-table';
 
@@ -97,6 +98,7 @@ export function Table<T>(props: Table.IOptions<T>) {
       <td
         key={column.id + '-' + row.key}
         className={isColumnResized[column.id] ? 'jp-mod-col-resized' : ''}
+        data-id={column.id}
       >
         {column.renderCell(row.data)}
       </td>
@@ -152,8 +154,14 @@ function SortableTH(props: {
   minWidth?: number;
 }): ReactElement {
   const isSortKey = props.id === props.state.sortKey;
-  const sortIcon =
-    !isSortKey || props.state.sortDirection === 1 ? caretUpIcon : caretDownIcon;
+  const sortDirection = isSortKey
+    ? props.state.sortDirection === 1
+      ? 'ascending'
+      : 'descending'
+    : 'none';
+  const sortLabel = props.label || props.id;
+  const nextSortDirection =
+    isSortKey && props.state.sortDirection === 1 ? 'descending' : 'ascending';
   const [columnWidth, setColumnWidth] = React.useState<number | null>(null);
 
   const thRef = React.useRef<HTMLTableCellElement | null>(null);
@@ -204,6 +212,9 @@ function SortableTH(props: {
   if (isSortKey) {
     classes.push('jp-sorted-header');
   }
+  if (!props.label) {
+    classes.push('jp-mod-empty-label');
+  }
   if (resizeOngoing) {
     classes.push('jp-header-resizing');
   }
@@ -217,11 +228,19 @@ function SortableTH(props: {
       onClick={() => props.onSort()}
       className={classes.join(' ')}
       data-id={props.id}
+      aria-sort={
+        isSortKey
+          ? props.state.sortDirection === 1
+            ? 'ascending'
+            : 'descending'
+          : 'none'
+      }
       style={{
+        minWidth: props.minWidth ? `${props.minWidth}px` : undefined,
         width:
           columnWidth !== null
             ? `${Math.max(props.minWidth ?? 50, columnWidth)}px`
-            : ''
+            : undefined
       }}
       onPointerDown={event => {
         if (
@@ -235,9 +254,35 @@ function SortableTH(props: {
     >
       <div className="jp-sortable-table-th-wrapper">
         <label>{props.label}</label>
-        <sortIcon.react tag="span" className="jp-sort-icon" />
+        <button
+          type="button"
+          className="jp-sort-iconButton"
+          title={`Sort ${sortLabel} ${nextSortDirection}`}
+          aria-label={`Sort ${sortLabel} ${nextSortDirection}`}
+          data-sort-direction={sortDirection}
+          onClick={event => {
+            event.stopPropagation();
+            props.onSort();
+          }}
+        >
+          <SortIndicator direction={sortDirection} />
+        </button>
       </div>
       <div className={RESIZE_HANDLE}></div>
     </th>
   );
+}
+
+function SortIndicator(props: {
+  direction: 'none' | 'ascending' | 'descending';
+}): ReactElement {
+  if (props.direction === 'ascending') {
+    return <moveUpIcon.react className="jp-sort-icon" tag="span" />;
+  }
+
+  if (props.direction === 'descending') {
+    return <moveDownIcon.react className="jp-sort-icon" tag="span" />;
+  }
+
+  return <arrowUpDownIcon.react className="jp-sort-icon" tag="span" />;
 }

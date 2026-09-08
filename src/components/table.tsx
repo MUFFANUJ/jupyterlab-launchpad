@@ -9,7 +9,12 @@ import type { ISignal } from '@lumino/signaling';
 import { Time } from '@jupyterlab/coreutils';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { TranslationBundle } from '@jupyterlab/translation';
-import { FilterBox, UseSignal, MenuSvg } from '@jupyterlab/ui-components';
+import {
+  FilterBox,
+  UseSignal,
+  MenuSvg,
+  launchIcon
+} from '@jupyterlab/ui-components';
 import { Table } from './base-table';
 import * as React from 'react';
 import {
@@ -25,6 +30,24 @@ import { starIcon } from '../icons';
 
 const STAR_BUTTON_CLASS = 'jp-starIconButton';
 const KERNEL_ITEM_CLASS = 'jp-TableKernelItem';
+const COLUMN_MIN_WIDTHS: Record<string, number> = {
+  star: 40,
+  kernel: 182,
+  nebi_version: 169,
+  'widget-type': 96,
+  conda_env_name: 150,
+  Namespace: 140,
+  pixi_environment: 130,
+  nebi_workspace: 180,
+  nebi_status: 171,
+  nebi_state: 171,
+  nebi_location: 120,
+  nebi_source: 120,
+  nebi_local_version: 150,
+  nebi_remote_version: 150,
+  actions: 218,
+  'last-used': 118
+};
 
 interface IVisibleKernelAction {
   action: IKernelAction;
@@ -264,6 +287,14 @@ export function KernelTable(props: {
   }, [props.commands]);
 
   const metadataAvailable = new Set<string>();
+  // Some registered columns render from related metadata instead of a matching
+  // raw key, so seed default-visible columns before scanning row metadata.
+  for (const column of props.kernelTable.getMetadataColumns()) {
+    if (column.isVisibleByDefault) {
+      metadataAvailable.add(column.id);
+    }
+  }
+
   for (const item of props.items) {
     const kernelMetadata = item.metadata?.kernel;
     if (!kernelMetadata) {
@@ -316,7 +347,8 @@ export function KernelTable(props: {
           const aValue = aKernelMeta ? aKernelMeta[metadataKey] : undefined;
           const bValue = bKernelMeta ? bKernelMeta[metadataKey] : undefined;
           return compareMetadataValues(aValue, bValue);
-        }
+        },
+        minWidth: COLUMN_MIN_WIDTHS[metadataKey]
       };
     }
   );
@@ -329,28 +361,43 @@ export function KernelTable(props: {
         return row.command.split(':')[0];
       },
       sort: (a: IKernelItem, b: IKernelItem) =>
-        a.command.localeCompare(b.command)
+        a.command.localeCompare(b.command),
+      minWidth: COLUMN_MIN_WIDTHS['widget-type']
     });
   }
+
+  const starColumn: Table.IColumn<IKernelItem> = {
+    id: 'star',
+    label: '',
+    minWidth: COLUMN_MIN_WIDTHS.star,
+    renderCell: (row: IKernelItem) => {
+      const starred = row.starred;
+      const title = starred
+        ? trans.__('Click to remove the kernel from favourites')
+        : trans.__('Click to add this kernel to favourites');
+      return (
+        <button
+          className={
+            starred ? `${STAR_BUTTON_CLASS} jp-mod-starred` : STAR_BUTTON_CLASS
+          }
+          title={title}
+          onClick={async event => {
+            event.stopPropagation();
+            await row.toggleStar();
+          }}
+        >
+          <starIcon.react className="jp-starIcon" />
+        </button>
+      );
+    },
+    sort: (a: IKernelItem, b: IKernelItem) =>
+      Number(a.starred) - Number(b.starred)
+  };
 
   const actionColumn: Table.IColumn<IKernelItem> = {
     id: 'actions',
     label: trans.__('Actions'),
-    isAvailable: () =>
-      props.items.some(item => {
-        const metadata = item.metadata?.kernel as
-          | ReadonlyJSONObject
-          | undefined;
-        return (
-          visibleKernelActions(
-            item,
-            metadata,
-            trans,
-            props.kernelTable,
-            props.commands
-          ).length > 0
-        );
-      }),
+    minWidth: COLUMN_MIN_WIDTHS.actions,
     renderCell: (row: IKernelItem) => {
       const metadata = row.metadata?.kernel as ReadonlyJSONObject | undefined;
       const actions = visibleKernelActions(
@@ -362,7 +409,7 @@ export function KernelTable(props: {
       );
 
       if (actions.length === 0) {
-        return <EllipsedCell>-</EllipsedCell>;
+        return null;
       }
 
       return (
@@ -371,13 +418,21 @@ export function KernelTable(props: {
             <button
               key={action.id}
               className="jp-KernelActionButton"
+              data-action={action.id}
               title={action.title ?? (caption || action.label)}
               onClick={async event => {
                 event.stopPropagation();
                 await props.commands.execute(action.command, args);
               }}
             >
-              {action.label}
+              <span>{action.label}</span>
+              {action.id === 'nebi-edit-config' ? (
+                <launchIcon.react
+                  className="jp-KernelActionButton-icon"
+                  tag="span"
+                  aria-hidden="true"
+                />
+              ) : null}
             </button>
           ))}
         </div>
@@ -387,9 +442,11 @@ export function KernelTable(props: {
   };
 
   const availableColumns: Table.IColumn<IKernelItem>[] = [
+    starColumn,
     {
       id: 'kernel',
       label: trans.__('Kernel'),
+      minWidth: COLUMN_MIN_WIDTHS.kernel,
       renderCell: (row: IKernelItem) => {
         const metadata = row.metadata?.kernel as ReadonlyJSONObject | undefined;
         return (
@@ -442,7 +499,8 @@ export function KernelTable(props: {
     actionColumn,
     {
       id: 'last-used',
-      label: trans.__('Last Used'),
+      label: trans.__('Last used'),
+      minWidth: COLUMN_MIN_WIDTHS['last-used'],
       renderCell: (row: IKernelItem) => {
         return (
           <UseSignal signal={row.refreshLastUsed}>
@@ -478,34 +536,6 @@ export function KernelTable(props: {
         }
         return a.lastUsed > b.lastUsed ? -1 : 1;
       }
-    },
-    {
-      id: 'star',
-      label: '',
-      renderCell: (row: IKernelItem) => {
-        const starred = row.starred;
-        const title = starred
-          ? trans.__('Click to remove the kernel from favourites')
-          : trans.__('Click to add this kernel to favourites');
-        return (
-          <button
-            className={
-              starred
-                ? `${STAR_BUTTON_CLASS} jp-mod-starred`
-                : STAR_BUTTON_CLASS
-            }
-            title={title}
-            onClick={async event => {
-              event.stopPropagation();
-              await row.toggleStar();
-            }}
-          >
-            <starIcon.react className="jp-starIcon" />
-          </button>
-        );
-      },
-      sort: (a: IKernelItem, b: IKernelItem) =>
-        Number(a.starred) - Number(b.starred)
     }
   ];
   const forceHiddenColumns = props.hideColumns ?? [];
@@ -526,7 +556,65 @@ export function KernelTable(props: {
     (props.settings.composite.columnOrder as ISettingsLayout['columnOrder']) ??
       initialColumnOrder
   );
+  const scrollerRef = React.useRef<HTMLDivElement | null>(null);
+  const [hasMoreRowsBelow, setHasMoreRowsBelow] = React.useState(false);
   const KernelItemTable = Table<IKernelItem>;
+
+  const lowerCaseQuery = query.toLowerCase();
+  const tableRows = props.items
+    .filter(kernel => {
+      // search in label
+      if (kernel.label.toLowerCase().includes(lowerCaseQuery)) {
+        return true;
+      }
+      // search in columns generated out of metadata
+      const kernelMeta = kernel.metadata?.kernel as
+        | ReadonlyJSONObject
+        | undefined;
+      if (!kernelMeta) {
+        return false;
+      }
+      for (const metadataKey of metadataAvailable) {
+        const value = kernelMeta[metadataKey];
+        const text = metadataValueToString(value);
+        if (text && text.toLowerCase().includes(lowerCaseQuery)) {
+          return true;
+        }
+      }
+      return false;
+    })
+    .map(data => {
+      return {
+        data: data,
+        key: data.command + JSON.stringify(data.args)
+      };
+    });
+  const visibleColumns = columns
+    .filter(column => hiddenColumns[column.id] !== 'hidden')
+    .map(column => {
+      const rank = columnOrder.indexOf(column.id);
+      return {
+        ...column,
+        rank: rank === -1 ? 100 : rank
+      };
+    })
+    .sort((a, b) => {
+      return a.rank - b.rank;
+    });
+
+  const updateScrollState = React.useCallback(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) {
+      setHasMoreRowsBelow(false);
+      return;
+    }
+
+    const nextHasMoreRowsBelow =
+      scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight > 1;
+    setHasMoreRowsBelow(current =>
+      current === nextHasMoreRowsBelow ? current : nextHasMoreRowsBelow
+    );
+  }, []);
 
   const onSettings = () => {
     const newHiddenColumns =
@@ -549,13 +637,42 @@ export function KernelTable(props: {
       props.settings.changed.disconnect(onSettings);
     };
   });
+  React.useEffect(() => {
+    updateScrollState();
+  });
+  React.useEffect(() => {
+    updateScrollState();
+    const scroller = scrollerRef.current;
+    if (!scroller) {
+      return;
+    }
+
+    const resizeObserver =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(updateScrollState);
+    resizeObserver?.observe(scroller);
+
+    const table = scroller.querySelector('table');
+    if (table) {
+      resizeObserver?.observe(table);
+    }
+
+    window.addEventListener('resize', updateScrollState);
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', updateScrollState);
+    };
+  }, [updateScrollState]);
 
   return (
     <div className="jp-NewLauncher-table">
       {props.showSearchBox ? (
         <div className="jp-Launcher-searchBox">
           <FilterBox
-            placeholder={trans.__('Filter kernels')}
+            placeholder={trans.__(
+              'Search kernels, environments and applications'
+            )}
             updateFilter={(_, query) => {
               updateQuery(query ?? '');
             }}
@@ -565,100 +682,74 @@ export function KernelTable(props: {
         </div>
       ) : null}
       <div
-        className="jp-NewLauncher-table-scroller"
-        onContextMenu={(event: React.MouseEvent) => {
-          event.preventDefault();
-          const contextMenu = new MenuSvg({ commands: props.commands });
-          contextMenu.addClass('jp-NewLauncher-contextMenu');
-          const columnsSubMenu = new MenuSvg({ commands: props.commands });
-          columnsSubMenu.addClass('jp-NewLauncher-contextMenu-visibleColumns');
-          for (const column of columns) {
-            columnsSubMenu.addItem({
-              command: CommandIDs.toggleColumn,
-              args: { id: column.id, label: column.label }
-            });
-          }
-          columnsSubMenu.title.label = trans.__('Visible Columns');
-          contextMenu.addItem({
-            type: 'submenu',
-            submenu: columnsSubMenu
-          });
-          const id = (
-            (event.target as HTMLElement).closest('th[data-id]') as HTMLElement
-          )?.dataset['id'];
-          if (id) {
-            contextMenu.addItem({
-              command: CommandIDs.moveColumn,
-              args: { direction: 'left', order: columnOrder, id }
-            });
-            contextMenu.addItem({
-              command: CommandIDs.moveColumn,
-              args: { direction: 'right', order: columnOrder, id }
-            });
-          }
-          contextMenu.open(event.clientX, event.clientY);
-        }}
+        className={`jp-NewLauncher-table-scrollerWrapper${
+          hasMoreRowsBelow ? ' jp-mod-hasMoreBelow' : ''
+        }`}
       >
-        <KernelItemTable
-          rows={props.items
-            .filter(kernel => {
-              const lowerCaseQuery = query.toLowerCase();
-              // search in label
-              if (kernel.label.toLowerCase().includes(lowerCaseQuery)) {
-                return true;
-              }
-              // search in columns generated out of metadata
-              const kernelMeta = kernel.metadata?.kernel as
-                | ReadonlyJSONObject
-                | undefined;
-              if (!kernelMeta) {
+        <div
+          ref={scrollerRef}
+          className="jp-NewLauncher-table-scroller"
+          onScroll={updateScrollState}
+          onContextMenu={(event: React.MouseEvent) => {
+            event.preventDefault();
+            const contextMenu = new MenuSvg({ commands: props.commands });
+            contextMenu.addClass('jp-NewLauncher-contextMenu');
+            const columnsSubMenu = new MenuSvg({ commands: props.commands });
+            columnsSubMenu.addClass(
+              'jp-NewLauncher-contextMenu-visibleColumns'
+            );
+            for (const column of columns) {
+              columnsSubMenu.addItem({
+                command: CommandIDs.toggleColumn,
+                args: { id: column.id, label: column.label }
+              });
+            }
+            columnsSubMenu.title.label = trans.__('Visible Columns');
+            contextMenu.addItem({
+              type: 'submenu',
+              submenu: columnsSubMenu
+            });
+            const id = (
+              (event.target as HTMLElement).closest(
+                'th[data-id]'
+              ) as HTMLElement
+            )?.dataset['id'];
+            if (id) {
+              contextMenu.addItem({
+                command: CommandIDs.moveColumn,
+                args: { direction: 'left', order: columnOrder, id }
+              });
+              contextMenu.addItem({
+                command: CommandIDs.moveColumn,
+                args: { direction: 'right', order: columnOrder, id }
+              });
+            }
+            contextMenu.open(event.clientX, event.clientY);
+          }}
+        >
+          <KernelItemTable
+            rows={tableRows}
+            blankIndicator={() => {
+              return <div>{trans.__('No entries')}</div>;
+            }}
+            sortKey="kernel"
+            onRowClick={event => {
+              const target = event.target as HTMLElement;
+              const row = target.closest('tr');
+              if (!row) {
                 return;
               }
-              for (const metadataKey of metadataAvailable) {
-                const value = kernelMeta[metadataKey];
-                const text = metadataValueToString(value);
-                if (text && text.toLowerCase().includes(lowerCaseQuery)) {
-                  return true;
-                }
+              const cell = target.closest('td');
+              const starButton = cell?.querySelector(`.${STAR_BUTTON_CLASS}`);
+              if (starButton) {
+                return (starButton as HTMLElement).click();
               }
-              return false;
-            })
-            .map(data => {
-              return {
-                data: data,
-                key: data.command + JSON.stringify(data.args)
-              };
-            })}
-          blankIndicator={() => {
-            return <div>{trans.__('No entries')}</div>;
-          }}
-          sortKey={'kernel'}
-          onRowClick={event => {
-            const target = event.target as HTMLElement;
-            const row = target.closest('tr');
-            if (!row) {
-              return;
-            }
-            const cell = target.closest('td');
-            const starButton = cell?.querySelector(`.${STAR_BUTTON_CLASS}`);
-            if (starButton) {
-              return (starButton as HTMLElement).click();
-            }
-            const element = row.querySelector(`.${KERNEL_ITEM_CLASS}`)!;
-            (element as HTMLElement).click();
-          }}
-          columns={columns
-            .filter(column => hiddenColumns[column.id] !== 'hidden')
-            .map(column => {
-              return {
-                ...column,
-                rank: columnOrder.indexOf(column.id) ?? 10
-              };
-            })
-            .sort((a, b) => {
-              return a.rank - b.rank;
-            })}
-        />
+              const element = row.querySelector(`.${KERNEL_ITEM_CLASS}`)!;
+              (element as HTMLElement).click();
+            }}
+            columns={visibleColumns}
+          />
+        </div>
       </div>
     </div>
   );

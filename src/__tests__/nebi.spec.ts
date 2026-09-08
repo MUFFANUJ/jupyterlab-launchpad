@@ -1,14 +1,8 @@
-jest.mock('@jupyterlab/ui-components', () => {
-  const icon = {
+jest.mock('@jupyterlab/ui-components', () => ({
+  infoIcon: {
     react: () => null
-  };
-  return {
-    checkIcon: icon,
-    downloadIcon: icon,
-    errorIcon: icon,
-    refreshIcon: icon
-  };
-});
+  }
+}));
 
 jest.mock('@jupyterlab/apputils', () => ({
   Notification: {
@@ -94,10 +88,19 @@ describe('LaunchpadKernelTable', () => {
 
     activateNebiPlugin(registry);
 
+    expect(
+      registry
+        .getMetadataColumns()
+        .filter(column => column.isVisibleByDefault)
+        .map(column => column.id)
+    ).toEqual(['nebi_version', 'nebi_status']);
+
+    const version = registry.getMetadataColumn('nebi_version');
     const state = registry.getMetadataColumn('nebi_state');
     const source = registry.getMetadataColumn('nebi_source');
     const remoteVersion = registry.getMetadataColumn('nebi_remote_version');
 
+    expect(version?.label).toBe('Version');
     expect(state?.label).toBe('Status');
     expect(source?.label).toBe('Location');
     expect(
@@ -111,7 +114,9 @@ describe('LaunchpadKernelTable', () => {
         },
         trans: null as never
       })
-    ).toBe('Missing: ipykernel');
+    ).toBe(
+      'This environment is missing a dependency required to start. Use Attempt fix to install them.'
+    );
     const renderedRemoteVersion = remoteVersion?.render?.({
       item,
       metadataKey: 'nebi_remote_version',
@@ -136,7 +141,7 @@ describe('LaunchpadKernelTable', () => {
           ? child.props.children
           : child
       )
-    ).toEqual(['v2', '(Latest)']);
+    ).toEqual(['v2']);
   });
 
   it('supports split Nebi status and location metadata', () => {
@@ -260,6 +265,19 @@ describe('LaunchpadKernelTable', () => {
     ).toMatchObject({
       workspace: 'demo'
     });
+
+    const notInstalledActions = registry.getActions({
+      item,
+      metadata: {
+        nebi_status: 'not-installed',
+        nebi_workspace: 'demo',
+        nebi_workspace_path: '/tmp/demo'
+      },
+      trans: null as never
+    });
+    expect(notInstalledActions.map(action => action.label)).toContain(
+      'Install'
+    );
 
     const missingDependencyActions = registry.getActions({
       item,

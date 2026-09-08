@@ -12,6 +12,7 @@ const hiddenColumns = {
   conda_is_currently_running: 'hidden',
   supported_encryption: 'hidden',
   nebi: 'hidden',
+  nebi_version: 'hidden',
   nebi_missing_dependencies: 'hidden',
   nebi_outdated: 'hidden',
   nebi_not_ready_reason: 'hidden',
@@ -155,7 +156,7 @@ test.describe('Nebi kernel metadata', () => {
       notebookSection.getByText('Ready', { exact: true })
     ).toBeVisible();
     await expect(
-      notebookSection.getByText('Missing deps', { exact: true })
+      notebookSection.getByText('Missing dependencies', { exact: true })
     ).toBeVisible();
     await expect(
       notebookSection.getByText('Remote', { exact: true })
