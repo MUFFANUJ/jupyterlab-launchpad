@@ -294,6 +294,19 @@ describe('LaunchpadKernelTable', () => {
       NebiCommandIDs.editConfig
     ]);
 
+    const failedActions = registry.getActions({
+      item,
+      metadata: {
+        nebi_status: 'failed',
+        nebi_workspace: 'demo',
+        nebi_workspace_path: '/tmp/demo'
+      },
+      trans: null as never
+    });
+    expect(failedActions.map(action => action.command)).toEqual([
+      NebiCommandIDs.editConfig
+    ]);
+
     const readyActions = registry.getActions({
       item,
       metadata: {
@@ -303,8 +316,6 @@ describe('LaunchpadKernelTable', () => {
       },
       trans: null as never
     });
-    expect(readyActions.map(action => action.command)).toEqual([
-      NebiCommandIDs.editConfig
-    ]);
+    expect(readyActions.map(action => action.command)).toEqual([]);
   });
 });

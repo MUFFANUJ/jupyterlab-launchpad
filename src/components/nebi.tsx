@@ -479,9 +479,14 @@ const nebiActions: IKernelAction[] = [
     command: NebiCommandIDs.editConfig,
     title: 'Open Nebi workspace configuration',
     rank: 2,
-    isAvailable: options =>
-      typeof options.metadata?.['nebi_workspace_path'] === 'string' &&
-      options.metadata['nebi_workspace_path'].length > 0,
+    isAvailable: options => {
+      const status = statusFromMetadata(options.metadata);
+      return (
+        (status === 'missing-deps' || status === 'failed') &&
+        typeof options.metadata?.['nebi_workspace_path'] === 'string' &&
+        options.metadata['nebi_workspace_path'].length > 0
+      );
+    },
     args: actionArgs
   }
 ];
