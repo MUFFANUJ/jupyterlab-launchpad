@@ -549,8 +549,14 @@
 
 .jp-NewLauncher-table .jp-sort-icon {
   height: 24px;
-  opacity: 1;
   width: 24px;
+}
+
+.jp-NewLauncher-table
+  .jp-sortable-table-tr
+  > th:not(.jp-sorted-header)
+  .jp-sort-icon {
+  opacity: 1;
 }
 
 .jp-NewLauncher-table .jp-sort-icon > svg {
@@ -726,6 +732,10 @@ body.jp-mod-resize-table .jp-sortable-table {
   color: var(--jp-launchpad-text);
   height: 16px;
   width: 16px;
+}
+
+.jp-starIconButton.jp-mod-starred > .jp-starIcon {
+  color: #eab54e;
 }
 
 .jp-starIcon .jp-star-filled {
