@@ -6,13 +6,13 @@ import {
 } from '@jupyterlab/application';
 import { Notification, showErrorMessage } from '@jupyterlab/apputils';
 import { ITranslator } from '@jupyterlab/translation';
-import { infoIcon } from '@jupyterlab/ui-components';
 import type {
   ReadonlyJSONObject,
   ReadonlyPartialJSONObject
 } from '@lumino/coreutils';
 import * as React from 'react';
 import { requestAPI } from '../handler';
+import { infoCircleIcon } from '../icons';
 import { addKernelRefreshMessageListener } from '../kernel-refresh-messages';
 import { refreshKernelSpecs } from '../kernel-refresh';
 import {
@@ -176,15 +176,23 @@ function renderNebiIndicator(
   label: string,
   className: string,
   status: string,
-  showInfoIcon?: boolean
+  showInfoIcon?: boolean,
+  title?: string
 ): React.ReactNode {
+  const tooltip = title || undefined;
   return (
-    <span className={`jp-NebiIndicator ${className}`} data-status={status}>
+    <span
+      className={`jp-NebiIndicator ${className}`}
+      data-status={status}
+      title={tooltip}
+      aria-label={tooltip ? `${label}: ${tooltip}` : label}
+    >
       <span className="jp-NebiIndicator-label">{label}</span>
       {showInfoIcon ? (
-        <infoIcon.react
+        <infoCircleIcon.react
           className="jp-NebiIndicator-icon"
           tag="span"
+          title={tooltip}
           aria-hidden="true"
         />
       ) : null}
@@ -192,16 +200,21 @@ function renderNebiIndicator(
   );
 }
 
-function renderStatus(value: string): React.ReactNode {
+function renderStatus(
+  value: string,
+  metadata: ReadonlyJSONObject | undefined
+): React.ReactNode {
   const presentation = NEBI_STATUS_PRESENTATION[value] ?? {
     label: value,
     className: 'jp-NebiStatus-unknown'
   };
+  const title = nebiStatusTitle(value, metadata);
   return renderNebiIndicator(
     presentation.label,
     presentation.className,
     value,
-    presentation.showInfoIcon
+    presentation.showInfoIcon,
+    title
   );
 }
 
@@ -312,14 +325,27 @@ function nebiStatusTitle(
     return undefined;
   }
 
-  const missingDependencies = missingDependenciesTitle(metadata);
-  if (missingDependencies) {
-    return missingDependencies;
+  switch (value) {
+    case 'not-installed':
+      return "Packages haven't been set up yet";
+    case 'missing-deps':
+      return 'Can’t launch in Jupyter';
+    case 'failed':
+      return 'This workspace is broken';
   }
 
   const reason = metadata?.['nebi_not_ready_reason'];
   if (typeof reason === 'string' && reason.length > 0) {
-    return NEBI_REDUNDANT_REASONS.has(reason) ? '' : reason;
+    if (!NEBI_REDUNDANT_REASONS.has(reason)) {
+      return reason;
+    }
+  }
+
+  switch (value) {
+    case 'not-pulled':
+      return 'This workspace has not been pulled locally. Use Pull to download it.';
+    case 'outdated':
+      return 'A newer remote version is available.';
   }
 
   return '';
@@ -366,7 +392,7 @@ const nebiColumns: IKernelMetadataColumn[] = Object.entries(
         return '-';
       }
 
-      return renderStatus(status);
+      return renderStatus(status, metadata);
     }
 
     if (id === 'nebi_source' || id === 'nebi_location') {

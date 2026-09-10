@@ -415,6 +415,9 @@
   border-radius: 6px;
   max-width: 100%;
   position: relative;
+}
+
+.jp-NewLauncher-table-scrollerWrapper.jp-mod-hasMoreBelow {
   border-bottom: 0;
 }
 
@@ -610,11 +613,6 @@
   width: 40px;
 }
 
-.jp-NewLauncher-table th[data-id='last-used'],
-.jp-NewLauncher-table td[data-id='last-used'] {
-  text-align: right;
-}
-
 .jp-NewLauncher-table th[data-id='actions'],
 .jp-NewLauncher-table td[data-id='actions'] {
   min-width: 180px;
@@ -622,6 +620,11 @@
 
 .jp-NewLauncher-table tr {
   cursor: pointer;
+}
+
+.jp-NewLauncher-table .jp-sortable-table-tr.jp-mod-empty {
+  color: var(--jp-ui-font-color2);
+  cursor: default;
 }
 
 .jp-sortable-table-tr > td.jp-mod-col-resized > .jp-ellipsis-wrapper {

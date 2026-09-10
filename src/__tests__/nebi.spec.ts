@@ -1,4 +1,7 @@
 jest.mock('@jupyterlab/ui-components', () => ({
+  LabIcon: class {
+    react = () => null;
+  },
   infoIcon: {
     react: () => null
   }
@@ -114,9 +117,19 @@ describe('LaunchpadKernelTable', () => {
         },
         trans: null as never
       })
-    ).toBe(
-      'This environment is missing a dependency required to start. Use Attempt fix to install them.'
-    );
+    ).toBe('Can’t launch in Jupyter');
+    expect(
+      state?.title?.({
+        item,
+        metadataKey: 'nebi_state',
+        value: 'failed',
+        metadata: {
+          nebi_state: 'failed',
+          nebi_not_ready_reason: 'The previous launch failed'
+        },
+        trans: null as never
+      })
+    ).toBe('This workspace is broken');
     const renderedRemoteVersion = remoteVersion?.render?.({
       item,
       metadataKey: 'nebi_remote_version',

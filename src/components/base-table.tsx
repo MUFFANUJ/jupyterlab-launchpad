@@ -116,6 +116,16 @@ export function Table<T>(props: Table.IOptions<T>) {
     );
   });
 
+  if (elements.length === 0) {
+    elements.push(
+      <tr key="blank" className="jp-sortable-table-tr jp-mod-empty">
+        <td colSpan={Math.max(visibleColumns.length, 1)}>
+          {props.blankIndicator()}
+        </td>
+      </tr>
+    );
+  }
+
   const columnsHeaders = visibleColumns.map(column => (
     <SortableTH
       label={column.label}

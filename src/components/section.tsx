@@ -2,10 +2,10 @@
 // Distributed under the terms of the Modified BSD License.
 import {
   caretDownEmptyThinIcon,
-  classes,
-  infoIcon
+  classes
 } from '@jupyterlab/ui-components';
 import * as React from 'react';
+import { infoCircleIcon } from '../icons';
 
 export function CollapsibleSection(
   props: React.PropsWithChildren<{
@@ -45,7 +45,7 @@ export function CollapsibleSection(
             title={props.description}
             aria-label={props.description}
           >
-            <infoIcon.react
+            <infoCircleIcon.react
               className="jp-CollapsibleSection-InfoIcon"
               tag="span"
               aria-hidden="true"
