@@ -40,9 +40,13 @@ function activateNebiPlugin(registry: LaunchpadKernelTable) {
     commands: {
       addCommand: jest.fn(),
       execute: jest.fn(),
+      hasCommand: jest.fn(id => id === 'server-proxy:open'),
       notifyCommandChanged: jest.fn()
     },
     serviceManager: {
+      serverSettings: {
+        baseUrl: 'http://example.com/user/demo/'
+      },
       kernelspecs: {
         refreshSpecs: jest.fn()
       }
@@ -231,6 +235,31 @@ describe('LaunchpadKernelTable', () => {
     );
   });
 
+  it('opens the Nebi overview through server proxy', async () => {
+    jest.clearAllMocks();
+    const registry = new LaunchpadKernelTable();
+
+    const app = activateNebiPlugin(registry);
+    const openCommand = (app.commands.addCommand as jest.Mock).mock.calls.find(
+      ([id]) => id === NebiCommandIDs.editConfig
+    )?.[1];
+    if (!openCommand) {
+      throw new Error('Open in Nebi command was not registered');
+    }
+
+    await openCommand.execute({});
+
+    expect(app.commands.execute).toHaveBeenCalledWith('server-proxy:open', {
+      id: 'server-proxy:nebi',
+      title: 'Nebi',
+      url: 'http://example.com/user/demo/nebi/',
+      newBrowserTab: false
+    });
+    expect(
+      (requestAPI as jest.Mock).mock.calls.map(([endpoint]) => endpoint)
+    ).not.toContain('nebi/config-path');
+  });
+
   it('keeps Nebi fallback icon titles behind the Nebi plugin', () => {
     const registry = new LaunchpadKernelTable();
     const item = {} as IKernelItem;
@@ -307,12 +336,24 @@ describe('LaunchpadKernelTable', () => {
       NebiCommandIDs.editConfig
     ]);
 
+    const missingDependencyActionsWithoutPath = registry.getActions({
+      item,
+      metadata: {
+        nebi_status: 'missing-deps',
+        nebi_workspace: 'demo',
+        nebi_missing_dependencies: ['ipykernel']
+      },
+      trans: null as never
+    });
+    expect(
+      missingDependencyActionsWithoutPath.map(action => action.command)
+    ).toEqual([NebiCommandIDs.editConfig]);
+
     const failedActions = registry.getActions({
       item,
       metadata: {
         nebi_status: 'failed',
-        nebi_workspace: 'demo',
-        nebi_workspace_path: '/tmp/demo'
+        nebi_workspace: 'demo'
       },
       trans: null as never
     });

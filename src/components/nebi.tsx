@@ -5,6 +5,7 @@ import {
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
 import { Notification, showErrorMessage } from '@jupyterlab/apputils';
+import { URLExt } from '@jupyterlab/coreutils';
 import { ITranslator } from '@jupyterlab/translation';
 import type {
   ReadonlyJSONObject,
@@ -36,15 +37,15 @@ interface INebiActionCapabilities {
   pixi: boolean;
 }
 
-interface INebiConfigPathResponse {
-  path: string;
-}
-
 interface INebiStatusPresentation {
   label: string;
   className: string;
   showInfoIcon?: boolean;
 }
+
+const NEBI_SERVER_PROXY_COMMAND = 'server-proxy:open';
+const NEBI_SERVER_PROXY_ID = 'server-proxy:nebi';
+const NEBI_SERVER_PROXY_PATH = 'nebi/';
 
 const NEBI_STATUS_PRESENTATION: Record<string, INebiStatusPresentation> = {
   'not-pulled': {
@@ -503,15 +504,11 @@ const nebiActions: IKernelAction[] = [
     id: 'nebi-edit-config',
     label: 'Open in Nebi',
     command: NebiCommandIDs.editConfig,
-    title: 'Open Nebi workspace configuration',
+    title: 'Open Nebi workspace overview',
     rank: 2,
     isAvailable: options => {
       const status = statusFromMetadata(options.metadata);
-      return (
-        (status === 'missing-deps' || status === 'failed') &&
-        typeof options.metadata?.['nebi_workspace_path'] === 'string' &&
-        options.metadata['nebi_workspace_path'].length > 0
-      );
+      return status === 'missing-deps' || status === 'failed';
     },
     args: actionArgs
   }
@@ -594,8 +591,7 @@ function registerNebiActionCommands(
     capabilities.nebi && stringArg(args, 'workspace').length > 0;
   const canInstallDependencies = (args: ReadonlyPartialJSONObject) =>
     capabilities.pixi && stringArg(args, 'workspacePath').length > 0;
-  const canEditConfig = (args: ReadonlyPartialJSONObject) =>
-    stringArg(args, 'workspacePath').length > 0;
+  const canOpenNebi = () => commands.hasCommand(NEBI_SERVER_PROXY_COMMAND);
 
   commands.addCommand(NebiCommandIDs.pull, {
     label: trans.__('Pull'),
@@ -665,29 +661,23 @@ function registerNebiActionCommands(
 
   commands.addCommand(NebiCommandIDs.editConfig, {
     label: trans.__('Open in Nebi'),
-    caption: trans.__('Open Nebi workspace configuration'),
-    isVisible: canEditConfig,
-    isEnabled: canEditConfig,
-    execute: async args => {
-      const workspacePath = stringArg(args, 'workspacePath');
-      if (!workspacePath) {
-        return;
-      }
-
+    caption: trans.__('Open Nebi workspace overview'),
+    isVisible: canOpenNebi,
+    isEnabled: canOpenNebi,
+    execute: async () => {
       try {
-        const response = await requestAPI<INebiConfigPathResponse>(
-          'nebi/config-path',
-          commandBody(args)
-        );
-        await commands.execute('docmanager:open', {
-          path: response.path
+        await commands.execute(NEBI_SERVER_PROXY_COMMAND, {
+          id: NEBI_SERVER_PROXY_ID,
+          title: 'Nebi',
+          url: URLExt.join(
+            app.serviceManager.serverSettings.baseUrl,
+            NEBI_SERVER_PROXY_PATH
+          ),
+          newBrowserTab: false
         });
       } catch (error) {
         console.error(error);
-        await showErrorMessage(
-          trans.__('Could not open Nebi config'),
-          error as Error
-        );
+        await showErrorMessage(trans.__('Could not open Nebi'), error as Error);
       }
     }
   });
