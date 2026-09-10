@@ -180,6 +180,29 @@ def _configure_nebi_kernel_manager():
                     "workspace_discovery_roots": [
                         str(NEBI_DEMO_WORKSPACE.parent.resolve())
                     ]
+                },
+                "ServerProxy": {
+                    "servers": {
+                        "nebi": {
+                            "command": [
+                                "nebi",
+                                "serve",
+                                "--host",
+                                "127.0.0.1",
+                                "--port",
+                                "{port}",
+                            ],
+                            "environment": {
+                                "NEBI_MODE": "local",
+                            },
+                            "launcher_entry": {
+                                "title": "Nebi",
+                                "path_info": "nebi/",
+                            },
+                            "new_browser_tab": False,
+                            "timeout": 30,
+                        }
+                    }
                 }
             },
             indent=2,
