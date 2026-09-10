@@ -1,9 +1,6 @@
 // Copyright (c) Nebari Development Team.
 // Distributed under the terms of the Modified BSD License.
-import {
-  caretDownEmptyThinIcon,
-  classes
-} from '@jupyterlab/ui-components';
+import { caretDownEmptyThinIcon, classes } from '@jupyterlab/ui-components';
 import * as React from 'react';
 import { infoCircleIcon } from '../icons';
 
