@@ -1028,24 +1028,6 @@ body.jp-mod-resize-table .jp-sortable-table {
   cursor: default;
 }
 
-.jp-NewLauncher-table .jp-KernelActionButton-icon {
-  align-items: center;
-  display: inline-flex;
-  height: 14px;
-  justify-content: center;
-  width: 14px;
-}
-
-.jp-NewLauncher-table .jp-KernelActionButton-icon > svg {
-  height: 14px;
-  width: 14px;
-}
-
-.jp-NewLauncher-table .jp-KernelActionButton-icon > svg .jp-icon3,
-.jp-NewLauncher-table .jp-KernelActionButton-icon > svg [fill] {
-  fill: currentcolor;
-}
-
 .jp-NewLauncher-table
   .jp-KernelActionButton[data-action='nebi-install-environment'] {
   background: var(--jp-launchpad-primary);

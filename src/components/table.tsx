@@ -9,12 +9,7 @@ import type { ISignal } from '@lumino/signaling';
 import { Time } from '@jupyterlab/coreutils';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { TranslationBundle } from '@jupyterlab/translation';
-import {
-  FilterBox,
-  UseSignal,
-  MenuSvg,
-  launchIcon
-} from '@jupyterlab/ui-components';
+import { FilterBox, UseSignal, MenuSvg } from '@jupyterlab/ui-components';
 import { Table } from './base-table';
 import * as React from 'react';
 import {
@@ -279,13 +274,6 @@ function KernelActionButton(props: {
         <span className="jp-KernelActionButton-spinner" aria-hidden="true" />
       ) : null}
       <span>{label}</span>
-      {!pending && action.id === 'nebi-edit-config' ? (
-        <launchIcon.react
-          className="jp-KernelActionButton-icon"
-          tag="span"
-          aria-hidden="true"
-        />
-      ) : null}
     </button>
   );
 }
