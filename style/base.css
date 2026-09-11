@@ -355,8 +355,15 @@
   box-shadow: none;
 }
 
+.jp-Launcher-TypeCard:focus,
+.jp-Launcher-TypeCard:focus:not(:active) {
+  border: 0;
+  box-shadow: none;
+  outline: none;
+}
+
 .jp-Launcher-TypeCard:focus-visible {
-  outline: 2px solid var(--jp-brand-color1);
+  outline: 1px solid var(--jp-launchpad-border-strong);
   outline-offset: 2px;
 }
 
@@ -372,8 +379,7 @@
   width: 70px;
 }
 
-.jp-Launcher-TypeCard:hover .jp-LauncherCard-icon,
-.jp-Launcher-TypeCard:focus-visible .jp-LauncherCard-icon {
+.jp-Launcher-TypeCard:hover .jp-LauncherCard-icon {
   box-shadow: 0 0 0 2px var(--jp-layout-color3);
   transform: translateY(-1px);
 }
