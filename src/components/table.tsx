@@ -146,7 +146,7 @@ function metadataValueTitle(
     trans
   });
   if (title !== undefined) {
-    return title;
+    return title ?? undefined;
   }
 
   return metadataValueToString(value);

@@ -50,6 +50,8 @@
   max-width: calc(100vw - 24px);
   padding: 8px 12px;
   pointer-events: none;
+  position: fixed;
+  transform: translate(-50%, -100%);
   white-space: nowrap;
   z-index: 100000;
 }
@@ -58,10 +60,19 @@
   border: 8px solid transparent;
   border-top-color: #262628;
   content: '';
-  left: var(--jp-launchpad-tooltip-arrow-left, 50%);
+  left: 50%;
   position: absolute;
   top: 100%;
   transform: translateX(-50%);
+}
+
+[data-jp-theme-light='false'] .jp-LaunchpadTooltip {
+  background: #fff;
+  color: #262628;
+}
+
+[data-jp-theme-light='false'] .jp-LaunchpadTooltip::after {
+  border-top-color: #fff;
 }
 
 .jp-LauncherBody {

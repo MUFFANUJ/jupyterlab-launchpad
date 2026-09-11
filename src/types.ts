@@ -97,7 +97,7 @@ export interface IKernelMetadataColumn {
    * version metadata.
    */
   isVisibleByDefault?: boolean;
-  title?(options: IKernelMetadataRenderOptions): string | undefined;
+  title?(options: IKernelMetadataRenderOptions): string | null | undefined;
   render?(options: IKernelMetadataRenderOptions): React.ReactNode | undefined;
 }
 

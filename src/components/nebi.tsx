@@ -377,7 +377,7 @@ const nebiColumns: IKernelMetadataColumn[] = Object.entries(
   isVisibleByDefault: id === 'nebi_version' || id === 'nebi_status',
   title: ({ value, metadata }) => {
     if (id === 'nebi_state' || id === 'nebi_status') {
-      return nebiStatusTitle(statusFromMetadata(metadata, value), metadata);
+      return null;
     }
 
     if (id === 'nebi_missing_dependencies') {

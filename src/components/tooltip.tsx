@@ -1,9 +1,8 @@
 // Copyright (c) Nebari Development Team.
 // Distributed under the terms of the Modified BSD License.
-import { HoverBox } from '@jupyterlab/ui-components';
 import * as React from 'react';
 
-const TOOLTIP_OFFSET = 20;
+const TOOLTIP_OFFSET = 12;
 
 export function LaunchpadTooltip(
   props: React.PropsWithChildren<{
@@ -25,34 +24,21 @@ export function LaunchpadTooltip(
     }
 
     const anchorRect = anchor.getBoundingClientRect();
-    const tooltipRect = tooltip.getBoundingClientRect();
-    const horizontalOffset = Math.round(
-      anchorRect.width / 2 - tooltipRect.width / 2
-    );
+    tooltip.style.left = `${Math.round(
+      anchorRect.left + anchorRect.width / 2
+    )}px`;
+    tooltip.style.top = `${Math.round(anchorRect.top - TOOLTIP_OFFSET)}px`;
+  }, []);
 
-    HoverBox.setGeometry({
-      anchor: anchorRect,
-      host: document.body,
-      maxHeight: 500,
-      minHeight: 20,
-      node: tooltip,
-      offset: {
-        horizontal: horizontalOffset,
-        vertical: {
-          above: -TOOLTIP_OFFSET
-        }
-      },
-      privilege: 'forceAbove',
-      style: window.getComputedStyle(tooltip)
+  const clearNativeTitles = React.useCallback(() => {
+    const anchor = anchorRef.current;
+    if (!anchor) {
+      return;
+    }
+    anchor.removeAttribute('title');
+    anchor.querySelectorAll('[title]').forEach(node => {
+      node.removeAttribute('title');
     });
-
-    const positionedRect = tooltip.getBoundingClientRect();
-    const arrowLeft =
-      anchorRect.left + anchorRect.width / 2 - positionedRect.left;
-    tooltip.style.setProperty(
-      '--jp-launchpad-tooltip-arrow-left',
-      `${Math.round(arrowLeft)}px`
-    );
   }, []);
 
   const hideTooltip = React.useCallback(() => {
@@ -69,6 +55,7 @@ export function LaunchpadTooltip(
     if (!anchorRef.current) {
       return;
     }
+    clearNativeTitles();
 
     let tooltip = tooltipRef.current;
     if (!tooltip) {
@@ -83,7 +70,7 @@ export function LaunchpadTooltip(
 
     tooltip.textContent = props.label;
     updatePosition();
-  }, [props.label, updatePosition]);
+  }, [clearNativeTitles, props.label, updatePosition]);
 
   React.useEffect(() => {
     return () => {
