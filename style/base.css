@@ -546,9 +546,7 @@
   position: relative;
 }
 
-.jp-NewLauncher-table-scrollerWrapper.jp-mod-hasMoreBelow {
-  border-bottom: 0;
-}
+
 
 .jp-Launcher-launchNotebook .jp-NewLauncher-table-scrollerWrapper::after,
 .jp-Launcher-launchConsole .jp-NewLauncher-table-scrollerWrapper::after,
@@ -562,9 +560,11 @@
   bottom: 0;
   content: '';
   height: 46px;
+  left: -5px;
   opacity: 0;
   pointer-events: none;
   position: absolute;
+  right: -5px;
   transition: opacity 180ms ease-out;
   z-index: 3;
 }
