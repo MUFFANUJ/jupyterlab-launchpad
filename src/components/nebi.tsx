@@ -484,6 +484,7 @@ const nebiActions: IKernelAction[] = [
   {
     id: 'nebi-pull',
     label: 'Pull',
+    pendingLabel: 'Pulling',
     command: NebiCommandIDs.pull,
     title: 'Pull this Nebi workspace',
     rank: 0,
@@ -496,6 +497,7 @@ const nebiActions: IKernelAction[] = [
   {
     id: 'nebi-install-environment',
     label: 'Install',
+    pendingLabel: 'Installing',
     command: NebiCommandIDs.installDependencies,
     title: 'Install environment',
     rank: 1,
@@ -508,6 +510,7 @@ const nebiActions: IKernelAction[] = [
   {
     id: 'nebi-install-dependencies',
     label: 'Attempt fix',
+    pendingLabel: 'Attempting fix',
     command: NebiCommandIDs.installDependencies,
     title: 'Install missing dependencies',
     rank: 1,
@@ -578,6 +581,11 @@ function notifyAction<T>(
     }
   );
   return operation;
+}
+
+function hasMissingDependencies(args: ReadonlyPartialJSONObject): boolean {
+  const value = args['missingDependencies'];
+  return Array.isArray(value) && value.length > 0;
 }
 
 async function getNebiServerProxyPath(): Promise<string | null> {
@@ -696,21 +704,30 @@ function registerNebiActionCommands(
       if (!capabilities.pixi) {
         return;
       }
+      const installingDependencies = hasMissingDependencies(args);
       try {
         await notifyAction(
           requestAPI('nebi/install-dependencies', commandBody(args)).then(() =>
             refreshKernelSpecs(app)
           ),
           {
-            pending: trans.__('Installing dependencies...'),
-            success: trans.__('Dependencies installed'),
-            error: trans.__('Could not install dependencies')
+            pending: installingDependencies
+              ? trans.__('Installing dependencies...')
+              : trans.__('Installing environment...'),
+            success: installingDependencies
+              ? trans.__('Dependencies installed')
+              : trans.__('Environment installed'),
+            error: installingDependencies
+              ? trans.__('Could not install dependencies')
+              : trans.__('Could not install environment')
           }
         );
       } catch (error) {
         console.error(error);
         await showErrorMessage(
-          trans.__('Could not install Nebi dependencies'),
+          installingDependencies
+            ? trans.__('Could not install Nebi dependencies')
+            : trans.__('Could not install Nebi environment'),
           error as Error
         );
       }

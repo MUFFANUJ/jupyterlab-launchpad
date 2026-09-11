@@ -229,6 +229,67 @@ function EllipsedCell(props: React.PropsWithChildren<{ title?: string }>) {
   );
 }
 
+function KernelActionButton(props: {
+  action: IKernelAction;
+  args: ReadonlyPartialJSONObject;
+  caption: string;
+  commands: CommandRegistry;
+}) {
+  const { action, args, caption, commands } = props;
+  const [pending, setPending] = React.useState(false);
+  const mounted = React.useRef(true);
+  const label =
+    pending && action.pendingLabel ? action.pendingLabel : action.label;
+
+  React.useEffect(() => {
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  return (
+    <button
+      className={
+        pending
+          ? 'jp-KernelActionButton jp-mod-loading'
+          : 'jp-KernelActionButton'
+      }
+      data-action={action.id}
+      title={pending ? label : action.title ?? (caption || action.label)}
+      disabled={pending}
+      aria-busy={pending || undefined}
+      onClick={async event => {
+        event.stopPropagation();
+        if (pending) {
+          return;
+        }
+        if (action.pendingLabel) {
+          setPending(true);
+        }
+        try {
+          await commands.execute(action.command, args);
+        } finally {
+          if (action.pendingLabel && mounted.current) {
+            setPending(false);
+          }
+        }
+      }}
+    >
+      {pending ? (
+        <span className="jp-KernelActionButton-spinner" aria-hidden="true" />
+      ) : null}
+      <span>{label}</span>
+      {!pending && action.id === 'nebi-edit-config' ? (
+        <launchIcon.react
+          className="jp-KernelActionButton-icon"
+          tag="span"
+          aria-hidden="true"
+        />
+      ) : null}
+    </button>
+  );
+}
+
 export function KernelTable(props: {
   trans: TranslationBundle;
   items: IKernelItem[];
@@ -417,25 +478,13 @@ export function KernelTable(props: {
       return (
         <div className="jp-KernelActions">
           {actions.map(({ action, args, caption }) => (
-            <button
+            <KernelActionButton
               key={action.id}
-              className="jp-KernelActionButton"
-              data-action={action.id}
-              title={action.title ?? (caption || action.label)}
-              onClick={async event => {
-                event.stopPropagation();
-                await props.commands.execute(action.command, args);
-              }}
-            >
-              <span>{action.label}</span>
-              {action.id === 'nebi-edit-config' ? (
-                <launchIcon.react
-                  className="jp-KernelActionButton-icon"
-                  tag="span"
-                  aria-hidden="true"
-                />
-              ) : null}
-            </button>
+              action={action}
+              args={args}
+              caption={caption}
+              commands={props.commands}
+            />
           ))}
         </div>
       );

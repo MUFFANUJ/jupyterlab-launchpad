@@ -112,6 +112,7 @@ export interface IKernelMetadataRenderOptions {
 export interface IKernelAction {
   id: string;
   label: string;
+  pendingLabel?: string;
   command: string;
   title?: string;
   rank?: number;
