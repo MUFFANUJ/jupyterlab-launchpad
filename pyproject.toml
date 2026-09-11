@@ -30,6 +30,9 @@ dynamic = ["version", "description", "authors", "urls", "keywords"]
 [project.optional-dependencies]
 test = ["jupyter-server-proxy"]
 
+[project.entry-points."jupyter_serverproxy_servers"]
+nebi = "jupyterlab_launchpad.nebi_server_proxy:setup_nebi_server_proxy"
+
 [tool.hatch.version]
 source = "nodejs"
 

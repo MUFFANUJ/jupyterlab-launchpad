@@ -6,6 +6,7 @@ import {
 } from '@jupyterlab/application';
 import { Notification, showErrorMessage } from '@jupyterlab/apputils';
 import { URLExt } from '@jupyterlab/coreutils';
+import { ServerConnection } from '@jupyterlab/services';
 import { ITranslator } from '@jupyterlab/translation';
 import type {
   ReadonlyJSONObject,
@@ -43,9 +44,18 @@ interface INebiStatusPresentation {
   showInfoIcon?: boolean;
 }
 
+interface IServerProxyInfo {
+  server_processes?: Array<{
+    name?: string;
+    launcher_entry?: {
+      path_info?: string;
+    };
+  }>;
+}
+
 const NEBI_SERVER_PROXY_COMMAND = 'server-proxy:open';
 const NEBI_SERVER_PROXY_ID = 'server-proxy:nebi';
-const NEBI_SERVER_PROXY_PATH = 'nebi/';
+const NEBI_WORKSPACE_OVERVIEW_PROXY_PATH = 'nebi/workspaces';
 
 const NEBI_STATUS_PRESENTATION: Record<string, INebiStatusPresentation> = {
   'not-pulled': {
@@ -453,6 +463,15 @@ const nebiColumns: IKernelMetadataColumn[] = Object.entries(
   }
 }));
 
+function hasNebiWorkspace(metadata: ReadonlyJSONObject | undefined): boolean {
+  const workspace = metadata?.['nebi_workspace'];
+  const workspacePath = metadata?.['nebi_workspace_path'];
+  return (
+    (typeof workspace === 'string' && workspace.length > 0) ||
+    (typeof workspacePath === 'string' && workspacePath.length > 0)
+  );
+}
+
 function actionArgs({ metadata }: IKernelActionOptions) {
   return {
     workspace: metadata?.['nebi_workspace'],
@@ -506,10 +525,7 @@ const nebiActions: IKernelAction[] = [
     command: NebiCommandIDs.editConfig,
     title: 'Open Nebi workspace overview',
     rank: 2,
-    isAvailable: options => {
-      const status = statusFromMetadata(options.metadata);
-      return status === 'missing-deps' || status === 'failed';
-    },
+    isAvailable: options => hasNebiWorkspace(options.metadata),
     args: actionArgs
   }
 ];
@@ -563,6 +579,38 @@ function notifyAction<T>(
   return operation;
 }
 
+async function getNebiServerProxyPath(): Promise<string | null> {
+  try {
+    const settings = ServerConnection.makeSettings();
+    const requestUrl = URLExt.join(
+      settings.baseUrl,
+      'server-proxy',
+      'servers-info'
+    );
+    const response = await ServerConnection.makeRequest(
+      requestUrl,
+      {},
+      settings
+    );
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = (await response.json()) as IServerProxyInfo;
+    const server = data.server_processes?.find(item => item.name === 'nebi');
+    if (!server) {
+      return null;
+    }
+
+    const path = server.launcher_entry?.path_info;
+    return typeof path === 'string' && path.length > 0
+      ? path.replace(/^\/+/, '')
+      : NEBI_WORKSPACE_OVERVIEW_PROXY_PATH;
+  } catch {
+    return null;
+  }
+}
+
 function registerNebiActionCommands(
   app: JupyterFrontEnd,
   trans: ReturnType<ITranslator['load']>
@@ -572,9 +620,11 @@ function registerNebiActionCommands(
     nebi: false,
     pixi: false
   };
+  let nebiServerProxyPath: string | null = null;
   const refreshActionCommands = () => {
     commands.notifyCommandChanged(NebiCommandIDs.pull);
     commands.notifyCommandChanged(NebiCommandIDs.installDependencies);
+    commands.notifyCommandChanged(NebiCommandIDs.editConfig);
   };
 
   void requestAPI<INebiActionCapabilities>('nebi/capabilities')
@@ -586,12 +636,19 @@ function registerNebiActionCommands(
       console.warn('Could not load Nebi action capabilities', error);
       refreshActionCommands();
     });
+  void getNebiServerProxyPath().then(value => {
+    nebiServerProxyPath = value;
+    refreshActionCommands();
+  });
 
   const canPull = (args: ReadonlyPartialJSONObject) =>
     capabilities.nebi && stringArg(args, 'workspace').length > 0;
   const canInstallDependencies = (args: ReadonlyPartialJSONObject) =>
     capabilities.pixi && stringArg(args, 'workspacePath').length > 0;
-  const canOpenNebi = () => commands.hasCommand(NEBI_SERVER_PROXY_COMMAND);
+  const canOpenNebi = () =>
+    capabilities.nebi &&
+    nebiServerProxyPath !== null &&
+    commands.hasCommand(NEBI_SERVER_PROXY_COMMAND);
 
   commands.addCommand(NebiCommandIDs.pull, {
     label: trans.__('Pull'),
@@ -665,13 +722,16 @@ function registerNebiActionCommands(
     isVisible: canOpenNebi,
     isEnabled: canOpenNebi,
     execute: async () => {
+      if (nebiServerProxyPath === null) {
+        return;
+      }
       try {
         await commands.execute(NEBI_SERVER_PROXY_COMMAND, {
           id: NEBI_SERVER_PROXY_ID,
           title: 'Nebi',
           url: URLExt.join(
             app.serviceManager.serverSettings.baseUrl,
-            NEBI_SERVER_PROXY_PATH
+            nebiServerProxyPath
           ),
           newBrowserTab: false
         });

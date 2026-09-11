@@ -14,6 +14,32 @@ jest.mock('@jupyterlab/apputils', () => ({
   showErrorMessage: jest.fn(() => Promise.resolve())
 }));
 
+jest.mock('@jupyterlab/services', () => ({
+  ServerConnection: {
+    makeSettings: jest.fn(() => ({
+      baseUrl: 'http://example.com/user/demo/'
+    })),
+    makeRequest: jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            server_processes: [
+              {
+                name: 'nebi',
+                launcher_entry: {
+                  path_info: 'nebi/workspaces'
+                }
+              }
+            ]
+          })
+      })
+    ),
+    NetworkError: class extends Error {},
+    ResponseError: class extends Error {}
+  }
+}));
+
 jest.mock('../handler', () => ({
   refreshKernelsWithInvalidation: jest.fn(() => Promise.resolve()),
   requestAPI: jest.fn(() => Promise.resolve({ nebi: true, pixi: true }))
@@ -25,6 +51,7 @@ jest.mock('../kernel-refresh-messages', () => ({
 
 import * as React from 'react';
 import { Notification } from '@jupyterlab/apputils';
+import { ServerConnection } from '@jupyterlab/services';
 import { LaunchpadKernelTable } from '../kernel-table';
 import {
   NebiCommandIDs,
@@ -34,6 +61,11 @@ import {
 import { requestAPI } from '../handler';
 import { addKernelRefreshMessageListener } from '../kernel-refresh-messages';
 import { IKernelItem } from '../types';
+
+async function settlePromises() {
+  await Promise.resolve();
+  await Promise.resolve();
+}
 
 function activateNebiPlugin(registry: LaunchpadKernelTable) {
   const app = {
@@ -247,17 +279,70 @@ describe('LaunchpadKernelTable', () => {
       throw new Error('Open in Nebi command was not registered');
     }
 
+    await settlePromises();
     await openCommand.execute({});
 
     expect(app.commands.execute).toHaveBeenCalledWith('server-proxy:open', {
       id: 'server-proxy:nebi',
       title: 'Nebi',
-      url: 'http://example.com/user/demo/nebi/',
+      url: 'http://example.com/user/demo/nebi/workspaces',
       newBrowserTab: false
     });
     expect(
       (requestAPI as jest.Mock).mock.calls.map(([endpoint]) => endpoint)
     ).not.toContain('nebi/config-path');
+  });
+
+  it('requires the Nebi server-proxy entry before opening Nebi', async () => {
+    jest.clearAllMocks();
+    const registry = new LaunchpadKernelTable();
+
+    const app = activateNebiPlugin(registry);
+    const openCommand = (app.commands.addCommand as jest.Mock).mock.calls.find(
+      ([id]) => id === NebiCommandIDs.editConfig
+    )?.[1];
+    if (!openCommand) {
+      throw new Error('Open in Nebi command was not registered');
+    }
+
+    expect(openCommand.isVisible()).toBe(false);
+
+    await settlePromises();
+
+    expect(openCommand.isVisible()).toBe(true);
+    expect(openCommand.isEnabled()).toBe(true);
+    expect(ServerConnection.makeRequest).toHaveBeenCalledWith(
+      'http://example.com/user/demo/server-proxy/servers-info',
+      {},
+      expect.objectContaining({
+        baseUrl: 'http://example.com/user/demo/'
+      })
+    );
+    expect(app.commands.notifyCommandChanged).toHaveBeenCalledWith(
+      NebiCommandIDs.editConfig
+    );
+  });
+
+  it('does not enable Open in Nebi without a Nebi server-proxy entry', async () => {
+    jest.clearAllMocks();
+    (ServerConnection.makeRequest as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ server_processes: [] })
+    });
+    const registry = new LaunchpadKernelTable();
+
+    const app = activateNebiPlugin(registry);
+    const openCommand = (app.commands.addCommand as jest.Mock).mock.calls.find(
+      ([id]) => id === NebiCommandIDs.editConfig
+    )?.[1];
+    if (!openCommand) {
+      throw new Error('Open in Nebi command was not registered');
+    }
+
+    await settlePromises();
+
+    expect(openCommand.isVisible()).toBe(false);
+    expect(openCommand.isEnabled()).toBe(false);
   });
 
   it('keeps Nebi fallback icon titles behind the Nebi plugin', () => {
@@ -293,7 +378,8 @@ describe('LaunchpadKernelTable', () => {
       trans: null as never
     });
     expect(remoteActions.map(action => action.command)).toEqual([
-      NebiCommandIDs.pull
+      NebiCommandIDs.pull,
+      NebiCommandIDs.editConfig
     ]);
     expect(
       remoteActions[0].args?.({
@@ -319,6 +405,9 @@ describe('LaunchpadKernelTable', () => {
     });
     expect(notInstalledActions.map(action => action.label)).toContain(
       'Install'
+    );
+    expect(notInstalledActions.map(action => action.command)).toContain(
+      NebiCommandIDs.editConfig
     );
 
     const missingDependencyActions = registry.getActions({
@@ -370,6 +459,17 @@ describe('LaunchpadKernelTable', () => {
       },
       trans: null as never
     });
-    expect(readyActions.map(action => action.command)).toEqual([]);
+    expect(readyActions.map(action => action.command)).toEqual([
+      NebiCommandIDs.editConfig
+    ]);
+
+    const builtInReadyActions = registry.getActions({
+      item,
+      metadata: {
+        nebi_status: 'ready'
+      },
+      trans: null as never
+    });
+    expect(builtInReadyActions.map(action => action.command)).toEqual([]);
   });
 });

@@ -15,6 +15,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from jupyter_core.paths import jupyter_runtime_dir
+
 
 ROOT = Path.cwd()
 PREFIX = Path(os.environ.get("CONDA_PREFIX", sys.prefix))
@@ -24,6 +26,7 @@ PYTHON_KERNEL_PATH = KERNELS_PATH / "python3"
 JUPYTER_CONFIG_PATH = (
     PREFIX / "etc" / "jupyter" / "jupyter_server_config.json"
 )
+NEBI_DATABASE_DSN = Path(jupyter_runtime_dir()) / "nebi-server-proxy.db"
 
 
 def _sample_workspace_metadata(name, **metadata):
@@ -168,6 +171,7 @@ def _create_nebi_demo_workspace():
 def _configure_nebi_kernel_manager():
     """Ensure the Binder preview uses the Nebi kernel provider."""
     JUPYTER_CONFIG_PATH.parent.mkdir(exist_ok=True, parents=True)
+    NEBI_DATABASE_DSN.parent.mkdir(exist_ok=True, parents=True)
     JUPYTER_CONFIG_PATH.write_text(
         json.dumps(
             {
@@ -193,12 +197,16 @@ def _configure_nebi_kernel_manager():
                                 "{port}",
                             ],
                             "environment": {
+                                "NEBI_DATABASE_DRIVER": "sqlite",
+                                "NEBI_DATABASE_DSN": str(NEBI_DATABASE_DSN),
                                 "NEBI_MODE": "local",
+                                "NEBI_SERVER_BASE_PATH": "{base_url}nebi",
                             },
                             "launcher_entry": {
                                 "title": "Nebi",
-                                "path_info": "nebi/",
+                                "path_info": "nebi/workspaces",
                             },
+                            "absolute_url": True,
                             "new_browser_tab": False,
                             "timeout": 30,
                         }
