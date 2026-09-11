@@ -283,6 +283,7 @@ function LauncherBody(props: {
             className={section.className}
             title={section.title}
             description={section.description}
+            emptyMessage={trans.__('No matches found')}
             key={section.id}
             open={startCollapsed[section.id] !== 'collapsed'}
           >

@@ -11,10 +11,12 @@ export function CollapsibleSection(
     className: string;
     open: boolean;
     description?: string;
+    emptyMessage?: string;
     onToggled?: (open: boolean) => void;
   }>
 ) {
   const [open, setOpen] = React.useState<boolean>(props.open);
+  const hasChildren = React.Children.count(props.children) > 0;
 
   const handleToggle = (event: { currentTarget: { open: boolean } }) => {
     setOpen(event.currentTarget.open);
@@ -26,7 +28,11 @@ export function CollapsibleSection(
   return (
     <details
       onToggle={handleToggle}
-      className={classes(props.className, 'jp-CollapsibleSection')}
+      className={classes(
+        props.className,
+        'jp-CollapsibleSection',
+        hasChildren ? '' : 'jp-mod-empty'
+      )}
       open={open}
     >
       <summary>
@@ -51,7 +57,13 @@ export function CollapsibleSection(
         ) : null}
       </summary>
       <div className="jp-Launcher-CardGroup jp-Launcher-cardContainer">
-        {props.children}
+        {hasChildren ? (
+          props.children
+        ) : props.emptyMessage ? (
+          <div className="jp-Launcher-SectionEmptyState">
+            {props.emptyMessage}
+          </div>
+        ) : null}
       </div>
     </details>
   );

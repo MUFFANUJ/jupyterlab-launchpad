@@ -5,6 +5,7 @@
   --jp-launchpad-border: #b7b7bb;
   --jp-launchpad-border-strong: #9d9da6;
   --jp-launchpad-surface: #f8f8f8;
+  --jp-launchpad-empty-bg: #f8f8f8;
   --jp-launchpad-button: #eeeeef;
   --jp-launchpad-primary: #9547c0;
   --jp-launchpad-primary-hover: #9547c0;
@@ -280,12 +281,19 @@
   display: none;
 }
 
-.jp-CollapsibleSection > summary:hover {
+.jp-CollapsibleSection:not(.jp-mod-empty) > summary:hover {
   background: var(--jp-launchpad-surface);
 }
 
 .jp-CollapsibleSection[open] > summary {
   margin-bottom: 8px;
+}
+
+.jp-CollapsibleSection.jp-mod-empty > summary {
+  background: var(--jp-layout-color1);
+  border-radius: 0;
+  box-sizing: border-box;
+  width: 240px;
 }
 
 .jp-CollapsibleSection-CollapserIconWrapper {
@@ -372,6 +380,18 @@
 .jp-Launcher-openByType > .jp-Launcher-cardContainer {
   display: flex;
   gap: 22px;
+}
+
+.jp-Launcher-SectionEmptyState {
+  align-items: center;
+  background: var(--jp-launchpad-empty-bg);
+  box-sizing: border-box;
+  color: var(--jp-launchpad-muted);
+  display: flex;
+  font-size: 16px;
+  height: 102px;
+  justify-content: center;
+  width: 240px;
 }
 
 .jp-Launcher-TypeCard {
@@ -602,7 +622,7 @@
   overflow: hidden;
 }
 
-.jp-NewLauncher-table .jp-sortable-table-tr:hover {
+.jp-NewLauncher-table .jp-sortable-table-tr:not(.jp-mod-empty):hover {
   background: var(--jp-launchpad-surface);
 }
 
@@ -734,6 +754,7 @@
 }
 
 .jp-NewLauncher-table .jp-sortable-table-tr.jp-mod-empty {
+  background: var(--jp-launchpad-empty-bg);
   color: var(--jp-launchpad-muted);
   cursor: default;
 }
