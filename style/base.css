@@ -549,8 +549,6 @@
   position: relative;
 }
 
-
-
 .jp-Launcher-launchNotebook .jp-NewLauncher-table-scrollerWrapper::after,
 .jp-Launcher-launchConsole .jp-NewLauncher-table-scrollerWrapper::after,
 .jp-KernelSelector-Dialog .jp-NewLauncher-table-scrollerWrapper::after {

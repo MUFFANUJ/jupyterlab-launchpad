@@ -153,7 +153,7 @@ describe('LaunchpadKernelTable', () => {
         },
         trans: null as never
       })
-    ).toBe('Can’t launch in Jupyter');
+    ).toBeNull();
     expect(
       state?.title?.({
         item,
@@ -165,7 +165,7 @@ describe('LaunchpadKernelTable', () => {
         },
         trans: null as never
       })
-    ).toBe('This workspace is broken');
+    ).toBeNull();
     const renderedRemoteVersion = remoteVersion?.render?.({
       item,
       metadataKey: 'nebi_remote_version',
@@ -378,8 +378,7 @@ describe('LaunchpadKernelTable', () => {
       trans: null as never
     });
     expect(remoteActions.map(action => action.command)).toEqual([
-      NebiCommandIDs.pull,
-      NebiCommandIDs.editConfig
+      NebiCommandIDs.pull
     ]);
     expect(
       remoteActions[0].args?.({
@@ -406,7 +405,7 @@ describe('LaunchpadKernelTable', () => {
     expect(notInstalledActions.map(action => action.label)).toContain(
       'Install'
     );
-    expect(notInstalledActions.map(action => action.command)).toContain(
+    expect(notInstalledActions.map(action => action.command)).not.toContain(
       NebiCommandIDs.editConfig
     );
 
@@ -459,9 +458,7 @@ describe('LaunchpadKernelTable', () => {
       },
       trans: null as never
     });
-    expect(readyActions.map(action => action.command)).toEqual([
-      NebiCommandIDs.editConfig
-    ]);
+    expect(readyActions.map(action => action.command)).toEqual([]);
 
     const builtInReadyActions = registry.getActions({
       item,

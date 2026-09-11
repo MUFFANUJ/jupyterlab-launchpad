@@ -470,15 +470,6 @@ const nebiColumns: IKernelMetadataColumn[] = Object.entries(
   }
 }));
 
-function hasNebiWorkspace(metadata: ReadonlyJSONObject | undefined): boolean {
-  const workspace = metadata?.['nebi_workspace'];
-  const workspacePath = metadata?.['nebi_workspace_path'];
-  return (
-    (typeof workspace === 'string' && workspace.length > 0) ||
-    (typeof workspacePath === 'string' && workspacePath.length > 0)
-  );
-}
-
 function actionArgs({ metadata }: IKernelActionOptions) {
   return {
     workspace: metadata?.['nebi_workspace'],
@@ -532,7 +523,10 @@ const nebiActions: IKernelAction[] = [
     command: NebiCommandIDs.editConfig,
     title: 'Open Nebi workspace overview',
     rank: 2,
-    isAvailable: options => hasNebiWorkspace(options.metadata),
+    isAvailable: options => {
+      const status = statusFromMetadata(options.metadata);
+      return status === 'missing-deps' || status === 'failed';
+    },
     args: actionArgs
   }
 ];
