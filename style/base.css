@@ -390,6 +390,7 @@
   .jp-LauncherCard-icon,
 .jp-Launcher-TypeCard[data-label^='Nebi'] .jp-LauncherCard-icon {
   background: #f3ebf9;
+  color: #6f3fa0;
 }
 
 .jp-Launcher-TypeCard[data-command='fileeditor:create-new']
@@ -420,6 +421,7 @@
   .jp-Launcher-TypeCard[data-label^='Nebi']
   .jp-LauncherCard-icon {
   background: #342146;
+  color: #d8b4ff;
 }
 
 [data-jp-theme-light='false']
@@ -683,6 +685,23 @@
 .jp-NewLauncher-table .jp-sortable-table-tr.jp-mod-empty {
   color: var(--jp-ui-font-color2);
   cursor: default;
+}
+
+.jp-NewLauncher-table .jp-sortable-table-tr.jp-mod-empty > td {
+  font-size: 16px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.jp-Launcher-launchNotebook
+  .jp-NewLauncher-table
+  .jp-sortable-table-tr.jp-mod-empty
+  > td,
+.jp-Launcher-launchConsole
+  .jp-NewLauncher-table
+  .jp-sortable-table-tr.jp-mod-empty
+  > td {
+  height: 320px;
 }
 
 .jp-sortable-table-tr > td.jp-mod-col-resized > .jp-ellipsis-wrapper {

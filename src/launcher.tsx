@@ -194,6 +194,7 @@ function LauncherBody(props: {
           searchPlaceholder={trans.__(
             'Search notebook kernels, environments and applications'
           )}
+          blankMessage={trans.__('No matching kernels found')}
           query={query}
           settings={props.settings}
           trans={trans}
@@ -222,6 +223,7 @@ function LauncherBody(props: {
           searchPlaceholder={trans.__(
             'Search console kernels, environments and applications'
           )}
+          blankMessage={trans.__('No matching consoles found')}
           query={query}
           settings={props.settings}
           trans={trans}

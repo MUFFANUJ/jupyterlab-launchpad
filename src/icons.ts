@@ -4,6 +4,7 @@ import starSvgstr from '../style/icons/md/star.svg';
 import folderOutlineSvgstr from '../style/icons/md/folder-outline.svg';
 import infoCircleSvgstr from '../style/icons/md/info-circle.svg';
 import codeServerSvgstr from '../style/icons/code-server.svg';
+import nebiSvgstr from '../style/icons/nebi.svg';
 
 export const arrowUpDownIcon = new LabIcon({
   name: 'jupyterlab-launchpad:arrow-up-down',
@@ -28,4 +29,9 @@ export const infoCircleIcon = new LabIcon({
 export const codeServerIcon = new LabIcon({
   name: 'jupyterlab-launchpad:code-server',
   svgstr: codeServerSvgstr
+});
+
+export const nebiIcon = new LabIcon({
+  name: 'jupyterlab-launchpad:nebi',
+  svgstr: nebiSvgstr
 });

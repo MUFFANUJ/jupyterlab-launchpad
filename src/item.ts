@@ -6,7 +6,7 @@ import { ReadonlyJSONObject, JSONObject } from '@lumino/coreutils';
 import { ILauncher } from '@jupyterlab/launcher';
 import { Signal, ISignal } from '@lumino/signaling';
 import { IItem, IFavoritesDatabase, ILastUsedDatabase } from './types';
-import { codeServerIcon } from './icons';
+import { codeServerIcon, nebiIcon } from './icons';
 
 function isJSONObject(value: unknown): value is JSONObject {
   return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -112,6 +112,13 @@ export class Item implements IItem {
       this.kernelIconUrl?.endsWith('/vscode')
     ) {
       this.icon = codeServerIcon;
+    }
+    const serverProxyId = (args as ReadonlyJSONObject)['id'];
+    if (
+      this.command === 'server-proxy:open' &&
+      (serverProxyId === 'server-proxy:nebi' || this.label === 'Nebi')
+    ) {
+      this.icon = nebiIcon;
     }
   }
   get starred() {

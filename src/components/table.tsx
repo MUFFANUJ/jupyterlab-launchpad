@@ -236,6 +236,7 @@ export function KernelTable(props: {
   settings: ISettingRegistry.ISettings;
   showSearchBox: boolean;
   searchPlaceholder?: string;
+  blankMessage?: string;
   query: string;
   onClick: (item: IKernelItem) => void;
   hideColumns?: string[];
@@ -729,7 +730,7 @@ export function KernelTable(props: {
           <KernelItemTable
             rows={tableRows}
             blankIndicator={() => {
-              return <div>{trans.__('No entries')}</div>;
+              return <div>{props.blankMessage ?? trans.__('No entries')}</div>;
             }}
             sortKey="kernel"
             onRowClick={event => {
