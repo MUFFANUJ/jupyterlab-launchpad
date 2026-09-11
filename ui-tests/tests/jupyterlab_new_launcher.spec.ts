@@ -82,6 +82,20 @@ test.describe('Filter individual', () => {
 
   test('search in individual sections', async ({ page }) => {
     const launcher = page.locator('.jp-LauncherBody');
+    await expect(
+      launcher
+        .locator('.jp-Launcher-launchNotebook .jp-Launcher-searchBox')
+        .getByPlaceholder(
+          'Search notebook kernels, environments and applications'
+        )
+    ).toBeVisible();
+    await expect(
+      launcher
+        .locator('.jp-Launcher-launchConsole .jp-Launcher-searchBox')
+        .getByPlaceholder(
+          'Search console kernels, environments and applications'
+        )
+    ).toBeVisible();
     expect(await launcher.screenshot()).toMatchSnapshot(
       'launcher-search-in-individual.png'
     );

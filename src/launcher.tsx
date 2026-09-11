@@ -163,6 +163,9 @@ function LauncherBody(props: {
             items={starred}
             commands={props.commands}
             showSearchBox={!searchAll}
+            searchPlaceholder={trans.__(
+              'Search starred kernels, environments and applications'
+            )}
             showWidgetType={true}
             query={query}
             settings={props.settings}
@@ -188,6 +191,9 @@ function LauncherBody(props: {
           items={props.notebookItems}
           commands={props.commands}
           showSearchBox={!searchAll}
+          searchPlaceholder={trans.__(
+            'Search notebook kernels, environments and applications'
+          )}
           query={query}
           settings={props.settings}
           trans={trans}
@@ -213,6 +219,9 @@ function LauncherBody(props: {
           items={props.consoleItems}
           commands={props.commands}
           showSearchBox={!searchAll}
+          searchPlaceholder={trans.__(
+            'Search console kernels, environments and applications'
+          )}
           query={query}
           settings={props.settings}
           trans={trans}

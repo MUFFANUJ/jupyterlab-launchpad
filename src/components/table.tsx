@@ -235,6 +235,7 @@ export function KernelTable(props: {
   commands: CommandRegistry;
   settings: ISettingRegistry.ISettings;
   showSearchBox: boolean;
+  searchPlaceholder?: string;
   query: string;
   onClick: (item: IKernelItem) => void;
   hideColumns?: string[];
@@ -670,9 +671,7 @@ export function KernelTable(props: {
       {props.showSearchBox ? (
         <div className="jp-Launcher-searchBox">
           <FilterBox
-            placeholder={trans.__(
-              'Search kernels, environments and applications'
-            )}
+            placeholder={props.searchPlaceholder ?? trans.__('Search kernels')}
             updateFilter={(_, query) => {
               updateQuery(query ?? '');
             }}
