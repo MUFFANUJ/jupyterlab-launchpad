@@ -1,4 +1,5 @@
-.jp-LauncherBody {
+.jp-LauncherBody,
+.jp-KernelSelector-Dialog {
   --jp-launchpad-text: #262628;
   --jp-launchpad-muted: #70707a;
   --jp-launchpad-border: #b7b7bb;
@@ -15,7 +16,9 @@
   --jp-launchpad-warn-fg: #6e5800;
   --jp-launchpad-error-bg: #ffe9e5;
   --jp-launchpad-error-fg: #d2161c;
+}
 
+.jp-LauncherBody {
   box-sizing: border-box;
   color: var(--jp-launchpad-text);
   height: 100%;
@@ -422,7 +425,8 @@
 }
 
 .jp-Launcher-launchNotebook .jp-NewLauncher-table-scrollerWrapper::after,
-.jp-Launcher-launchConsole .jp-NewLauncher-table-scrollerWrapper::after {
+.jp-Launcher-launchConsole .jp-NewLauncher-table-scrollerWrapper::after,
+.jp-KernelSelector-Dialog .jp-NewLauncher-table-scrollerWrapper::after {
   background: linear-gradient(
     to bottom,
     rgb(255 255 255 / 0%),
@@ -444,6 +448,8 @@
 .jp-Launcher-launchNotebook
   .jp-NewLauncher-table-scrollerWrapper.jp-mod-hasMoreBelow::after,
 .jp-Launcher-launchConsole
+  .jp-NewLauncher-table-scrollerWrapper.jp-mod-hasMoreBelow::after,
+.jp-KernelSelector-Dialog
   .jp-NewLauncher-table-scrollerWrapper.jp-mod-hasMoreBelow::after {
   opacity: 1;
 }
@@ -456,7 +462,8 @@
 }
 
 .jp-Launcher-launchNotebook .jp-NewLauncher-table-scroller,
-.jp-Launcher-launchConsole .jp-NewLauncher-table-scroller {
+.jp-Launcher-launchConsole .jp-NewLauncher-table-scroller,
+.jp-KernelSelector-Dialog .jp-NewLauncher-table-scroller {
   max-height: 360px;
 }
 
@@ -847,7 +854,7 @@ body.jp-mod-resize-table .jp-sortable-table {
   gap: 4px;
 }
 
-.jp-LauncherBody .jp-KernelActionButton {
+.jp-NewLauncher-table .jp-KernelActionButton {
   align-items: center;
   background: var(--jp-launchpad-button);
   border: 0;
@@ -864,7 +871,7 @@ body.jp-mod-resize-table .jp-sortable-table {
   padding: 6px 10px;
 }
 
-.jp-LauncherBody .jp-KernelActionButton-icon {
+.jp-NewLauncher-table .jp-KernelActionButton-icon {
   align-items: center;
   display: inline-flex;
   height: 14px;
@@ -872,39 +879,41 @@ body.jp-mod-resize-table .jp-sortable-table {
   width: 14px;
 }
 
-.jp-LauncherBody .jp-KernelActionButton-icon > svg {
+.jp-NewLauncher-table .jp-KernelActionButton-icon > svg {
   height: 14px;
   width: 14px;
 }
 
-.jp-LauncherBody .jp-KernelActionButton-icon > svg .jp-icon3,
-.jp-LauncherBody .jp-KernelActionButton-icon > svg [fill] {
+.jp-NewLauncher-table .jp-KernelActionButton-icon > svg .jp-icon3,
+.jp-NewLauncher-table .jp-KernelActionButton-icon > svg [fill] {
   fill: currentcolor;
 }
 
-.jp-LauncherBody .jp-KernelActionButton[data-action='nebi-pull'],
-.jp-LauncherBody .jp-KernelActionButton[data-action='nebi-install-environment'],
-.jp-LauncherBody
+.jp-NewLauncher-table .jp-KernelActionButton[data-action='nebi-pull'],
+.jp-NewLauncher-table
+  .jp-KernelActionButton[data-action='nebi-install-environment'],
+.jp-NewLauncher-table
   .jp-KernelActionButton[data-action='nebi-install-dependencies'] {
   background: var(--jp-launchpad-primary);
   color: var(--jp-ui-inverse-font-color1);
 }
 
-.jp-LauncherBody .jp-KernelActionButton:hover,
-.jp-LauncherBody .jp-KernelActionButton:focus-visible {
+.jp-NewLauncher-table .jp-KernelActionButton:hover,
+.jp-NewLauncher-table .jp-KernelActionButton:focus-visible {
   background: var(--jp-layout-color3);
   text-decoration: none;
 }
 
-.jp-LauncherBody .jp-KernelActionButton[data-action='nebi-pull']:hover,
-.jp-LauncherBody .jp-KernelActionButton[data-action='nebi-pull']:focus-visible,
-.jp-LauncherBody
+.jp-NewLauncher-table .jp-KernelActionButton[data-action='nebi-pull']:hover,
+.jp-NewLauncher-table
+  .jp-KernelActionButton[data-action='nebi-pull']:focus-visible,
+.jp-NewLauncher-table
   .jp-KernelActionButton[data-action='nebi-install-environment']:hover,
-.jp-LauncherBody
+.jp-NewLauncher-table
   .jp-KernelActionButton[data-action='nebi-install-environment']:focus-visible,
-.jp-LauncherBody
+.jp-NewLauncher-table
   .jp-KernelActionButton[data-action='nebi-install-dependencies']:hover,
-.jp-LauncherBody
+.jp-NewLauncher-table
   .jp-KernelActionButton[data-action='nebi-install-dependencies']:focus-visible {
   background: var(--jp-launchpad-primary-hover);
 }
