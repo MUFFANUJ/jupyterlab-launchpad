@@ -193,9 +193,11 @@ function renderNebiIndicator(
   const tooltip = title || undefined;
   return (
     <span
-      className={`jp-NebiIndicator ${className}`}
+      className={`jp-NebiIndicator ${
+        tooltip ? 'jp-LaunchpadTooltip' : ''
+      } ${className}`}
       data-status={status}
-      title={tooltip}
+      data-tooltip={tooltip}
       aria-label={tooltip ? `${label}: ${tooltip}` : label}
     >
       <span className="jp-NebiIndicator-label">{label}</span>
@@ -203,7 +205,6 @@ function renderNebiIndicator(
         <infoCircleIcon.react
           className="jp-NebiIndicator-icon"
           tag="span"
-          title={tooltip}
           aria-hidden="true"
         />
       ) : null}

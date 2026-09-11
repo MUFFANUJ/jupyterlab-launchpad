@@ -38,8 +38,8 @@ export function CollapsibleSection(
         <h3 className="jp-CollapsibleSection-Title">{props.title}</h3>
         {props.description ? (
           <span
-            className="jp-CollapsibleSection-Info"
-            title={props.description}
+            className="jp-LaunchpadTooltip jp-CollapsibleSection-Info"
+            data-tooltip={props.description}
             aria-label={props.description}
           >
             <infoCircleIcon.react
