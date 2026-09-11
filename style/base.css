@@ -7,8 +7,9 @@
   --jp-launchpad-surface: #f8f8f8;
   --jp-launchpad-empty-bg: #f8f8f8;
   --jp-launchpad-button: #eeeeef;
+  --jp-launchpad-button-hover: #dedee2;
   --jp-launchpad-primary: #9547c0;
-  --jp-launchpad-primary-hover: #9547c0;
+  --jp-launchpad-primary-hover: #8439aa;
   --jp-launchpad-ready-bg: #dbf7df;
   --jp-launchpad-ready-fg: #006e2e;
   --jp-launchpad-info-bg: #e7efff;
@@ -27,6 +28,8 @@
   --jp-launchpad-border-strong: var(--jp-border-color2);
   --jp-launchpad-surface: var(--jp-layout-color2);
   --jp-launchpad-button: var(--jp-layout-color2);
+  --jp-launchpad-button-hover: var(--jp-layout-color3);
+  --jp-launchpad-primary-hover: #a45acb;
   --jp-launchpad-ready-bg: #0b3d1b;
   --jp-launchpad-ready-fg: #79e69a;
   --jp-launchpad-info-bg: #102f65;
@@ -1048,7 +1051,7 @@ body.jp-mod-resize-table .jp-sortable-table {
 
 .jp-NewLauncher-table .jp-KernelActionButton:hover,
 .jp-NewLauncher-table .jp-KernelActionButton:focus-visible {
-  background: var(--jp-launchpad-button);
+  background: var(--jp-launchpad-button-hover);
   text-decoration: none;
 }
 
