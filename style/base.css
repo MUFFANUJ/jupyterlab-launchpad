@@ -783,7 +783,7 @@
   .jp-NewLauncher-table
   .jp-sortable-table-tr.jp-mod-empty
   > td {
-  height: 320px;
+  height: 100px;
 }
 
 .jp-sortable-table-tr > td.jp-mod-col-resized > .jp-ellipsis-wrapper {
