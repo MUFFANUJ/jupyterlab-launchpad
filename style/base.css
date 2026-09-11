@@ -1,13 +1,13 @@
 .jp-LauncherBody,
 .jp-KernelSelector-Dialog {
-  --jp-launchpad-text: var(--jp-ui-font-color1);
-  --jp-launchpad-muted: var(--jp-ui-font-color2);
-  --jp-launchpad-border: var(--jp-border-color1);
-  --jp-launchpad-border-strong: var(--jp-border-color2);
-  --jp-launchpad-surface: var(--jp-layout-color2);
-  --jp-launchpad-button: var(--jp-layout-color2);
-  --jp-launchpad-primary: var(--jp-brand-color1);
-  --jp-launchpad-primary-hover: var(--jp-brand-color0, var(--jp-brand-color1));
+  --jp-launchpad-text: #262628;
+  --jp-launchpad-muted: #70707a;
+  --jp-launchpad-border: #b7b7bb;
+  --jp-launchpad-border-strong: #9d9da6;
+  --jp-launchpad-surface: #f8f8f8;
+  --jp-launchpad-button: #eeeeef;
+  --jp-launchpad-primary: #9547c0;
+  --jp-launchpad-primary-hover: #9547c0;
   --jp-launchpad-ready-bg: #dbf7df;
   --jp-launchpad-ready-fg: #006e2e;
   --jp-launchpad-info-bg: #e7efff;
@@ -20,6 +20,12 @@
 
 [data-jp-theme-light='false'] .jp-LauncherBody,
 [data-jp-theme-light='false'] .jp-KernelSelector-Dialog {
+  --jp-launchpad-text: var(--jp-ui-font-color1);
+  --jp-launchpad-muted: var(--jp-ui-font-color2);
+  --jp-launchpad-border: var(--jp-border-color1);
+  --jp-launchpad-border-strong: var(--jp-border-color2);
+  --jp-launchpad-surface: var(--jp-layout-color2);
+  --jp-launchpad-button: var(--jp-layout-color2);
   --jp-launchpad-ready-bg: #0b3d1b;
   --jp-launchpad-ready-fg: #79e69a;
   --jp-launchpad-info-bg: #102f65;
@@ -390,14 +396,16 @@
   .jp-LauncherCard-icon,
 .jp-Launcher-TypeCard[data-label^='Nebi'] .jp-LauncherCard-icon {
   background: #f3ebf9;
-  color: #6f3fa0;
 }
 
 .jp-Launcher-TypeCard[data-command='fileeditor:create-new']
   .jp-LauncherCard-icon,
-.jp-Launcher-TypeCard[data-command='terminal:create-new'] .jp-LauncherCard-icon,
 .jp-Launcher-TypeCard[data-label^='VS Code'] .jp-LauncherCard-icon {
   background: #f1f1f2;
+}
+
+.jp-Launcher-TypeCard[data-command='terminal:create-new'] .jp-LauncherCard-icon {
+  background: #f1f1f3;
 }
 
 .jp-Launcher-TypeCard[data-command='console:create'] .jp-LauncherCard-icon {
@@ -421,7 +429,6 @@
   .jp-Launcher-TypeCard[data-label^='Nebi']
   .jp-LauncherCard-icon {
   background: #342146;
-  color: #d8b4ff;
 }
 
 [data-jp-theme-light='false']
@@ -489,11 +496,11 @@
   bottom: 0;
   content: '';
   height: 46px;
-  left: -5%;
+  left: -2%;
   opacity: 0;
   pointer-events: none;
   position: absolute;
-  right: -5%;
+  right: -2%;
   transition: opacity 180ms ease-out;
   z-index: 3;
 }
@@ -683,7 +690,7 @@
 }
 
 .jp-NewLauncher-table .jp-sortable-table-tr.jp-mod-empty {
-  color: var(--jp-ui-font-color2);
+  color: var(--jp-launchpad-muted);
   cursor: default;
 }
 
@@ -928,7 +935,7 @@ body.jp-mod-resize-table .jp-sortable-table {
   align-items: center;
   background: var(--jp-launchpad-button);
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   color: var(--jp-launchpad-text);
   cursor: pointer;
   display: inline-flex;
@@ -937,8 +944,8 @@ body.jp-mod-resize-table .jp-sortable-table {
   gap: 4px;
   justify-content: center;
   line-height: 16px;
-  min-height: 28px;
-  padding: 6px 10px;
+  min-height: 24px;
+  padding: 4px 8px;
 }
 
 .jp-NewLauncher-table .jp-KernelActionButton-icon {
@@ -959,24 +966,29 @@ body.jp-mod-resize-table .jp-sortable-table {
   fill: currentcolor;
 }
 
-.jp-NewLauncher-table .jp-KernelActionButton[data-action='nebi-pull'],
 .jp-NewLauncher-table
-  .jp-KernelActionButton[data-action='nebi-install-environment'],
+  .jp-KernelActionButton[data-action='nebi-install-environment'] {
+  background: var(--jp-launchpad-primary);
+  color: #fff;
+  min-height: 28px;
+  padding: 6px 10px;
+}
+
+.jp-NewLauncher-table .jp-KernelActionButton[data-action='nebi-pull'],
 .jp-NewLauncher-table
   .jp-KernelActionButton[data-action='nebi-install-dependencies'] {
   background: var(--jp-launchpad-primary);
-  color: var(--jp-ui-inverse-font-color1);
+  color: #fff;
 }
 
 .jp-NewLauncher-table .jp-KernelActionButton:hover,
 .jp-NewLauncher-table .jp-KernelActionButton:focus-visible {
-  background: var(--jp-layout-color3);
+  background: var(--jp-launchpad-button);
   text-decoration: none;
 }
 
 .jp-NewLauncher-table .jp-KernelActionButton[data-action='nebi-pull']:hover,
-.jp-NewLauncher-table
-  .jp-KernelActionButton[data-action='nebi-pull']:focus-visible,
+.jp-NewLauncher-table .jp-KernelActionButton[data-action='nebi-pull']:focus-visible,
 .jp-NewLauncher-table
   .jp-KernelActionButton[data-action='nebi-install-environment']:hover,
 .jp-NewLauncher-table
@@ -986,6 +998,7 @@ body.jp-mod-resize-table .jp-sortable-table {
 .jp-NewLauncher-table
   .jp-KernelActionButton[data-action='nebi-install-dependencies']:focus-visible {
   background: var(--jp-launchpad-primary-hover);
+  color: #fff;
 }
 
 .jp-ellipsis-wrapper,
