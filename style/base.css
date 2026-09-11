@@ -560,11 +560,11 @@
   bottom: 0;
   content: '';
   height: 46px;
-  left: -5px;
+  left: 0px;
   opacity: 0;
   pointer-events: none;
   position: absolute;
-  right: -5px;
+  right: 0px;
   transition: opacity 180ms ease-out;
   z-index: 3;
 }
