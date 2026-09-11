@@ -17,6 +17,7 @@ import { requestAPI } from '../handler';
 import { infoCircleIcon } from '../icons';
 import { addKernelRefreshMessageListener } from '../kernel-refresh-messages';
 import { refreshKernelSpecs } from '../kernel-refresh';
+import { LaunchpadTooltip } from './tooltip';
 import {
   IKernelAction,
   IKernelActionOptions,
@@ -193,15 +194,20 @@ function renderNebiIndicator(
   const tooltip = title || undefined;
   return (
     <span
-      className={`jp-NebiIndicator ${
-        tooltip ? 'jp-LaunchpadTooltip' : ''
-      } ${className}`}
+      className={`jp-NebiIndicator ${className}`}
       data-status={status}
-      data-tooltip={tooltip}
       aria-label={tooltip ? `${label}: ${tooltip}` : label}
     >
       <span className="jp-NebiIndicator-label">{label}</span>
-      {showInfoIcon ? (
+      {showInfoIcon && tooltip ? (
+        <LaunchpadTooltip label={tooltip}>
+          <infoCircleIcon.react
+            className="jp-NebiIndicator-icon"
+            tag="span"
+            aria-hidden="true"
+          />
+        </LaunchpadTooltip>
+      ) : showInfoIcon ? (
         <infoCircleIcon.react
           className="jp-NebiIndicator-icon"
           tag="span"

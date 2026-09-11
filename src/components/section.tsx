@@ -3,6 +3,7 @@
 import { caretDownEmptyThinIcon, classes } from '@jupyterlab/ui-components';
 import * as React from 'react';
 import { infoCircleIcon } from '../icons';
+import { LaunchpadTooltip } from './tooltip';
 
 export function CollapsibleSection(
   props: React.PropsWithChildren<{
@@ -37,17 +38,16 @@ export function CollapsibleSection(
         </div>
         <h3 className="jp-CollapsibleSection-Title">{props.title}</h3>
         {props.description ? (
-          <span
-            className="jp-LaunchpadTooltip jp-CollapsibleSection-Info"
-            data-tooltip={props.description}
-            aria-label={props.description}
+          <LaunchpadTooltip
+            className="jp-CollapsibleSection-Info"
+            label={props.description}
           >
             <infoCircleIcon.react
               className="jp-CollapsibleSection-InfoIcon"
               tag="span"
               aria-hidden="true"
             />
-          </span>
+          </LaunchpadTooltip>
         ) : null}
       </summary>
       <div className="jp-Launcher-CardGroup jp-Launcher-cardContainer">
