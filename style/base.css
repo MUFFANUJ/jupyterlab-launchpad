@@ -410,7 +410,8 @@
   background: #f1f1f2;
 }
 
-.jp-Launcher-TypeCard[data-command='terminal:create-new'] .jp-LauncherCard-icon {
+.jp-Launcher-TypeCard[data-command='terminal:create-new']
+  .jp-LauncherCard-icon {
   background: #f1f1f3;
 }
 
@@ -994,7 +995,8 @@ body.jp-mod-resize-table .jp-sortable-table {
 }
 
 .jp-NewLauncher-table .jp-KernelActionButton[data-action='nebi-pull']:hover,
-.jp-NewLauncher-table .jp-KernelActionButton[data-action='nebi-pull']:focus-visible,
+.jp-NewLauncher-table
+  .jp-KernelActionButton[data-action='nebi-pull']:focus-visible,
 .jp-NewLauncher-table
   .jp-KernelActionButton[data-action='nebi-install-environment']:hover,
 .jp-NewLauncher-table
