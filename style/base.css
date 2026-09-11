@@ -542,11 +542,9 @@
   bottom: 0;
   content: '';
   height: 46px;
-  left: -5px;
   opacity: 0;
   pointer-events: none;
   position: absolute;
-  right: -5px;
   transition: opacity 180ms ease-out;
   z-index: 3;
 }
